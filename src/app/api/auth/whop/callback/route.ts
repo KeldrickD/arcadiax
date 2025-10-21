@@ -1,0 +1,23 @@
+import { exchangeWhopCodeForToken } from '@/lib/whop';
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const code = searchParams.get('code');
+  const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'}/api/auth/whop/callback`;
+
+  if (!code) {
+    return new Response('Missing code', { status: 400 });
+  }
+
+  try {
+    const token = await exchangeWhopCodeForToken({ code, redirectUri });
+    return new Response(JSON.stringify({ ok: true, access_token: token.access_token, token_type: token.token_type }), {
+      headers: { 'content-type': 'application/json' },
+    });
+  } catch (e: any) {
+    return new Response(JSON.stringify({ ok: false, error: e?.message ?? 'OAuth failed' }), {
+      status: 500,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+}
