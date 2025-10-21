@@ -5,19 +5,27 @@ export async function GET() {
   const authorizeBase = authorizeBaseRaw.replace(/\/+$/, '');
   const scope = process.env.NEXT_PUBLIC_WHOP_OAUTH_SCOPE ?? 'read:memberships';
   const audience = process.env.NEXT_PUBLIC_WHOP_OAUTH_AUDIENCE;
-  if (!appId) {
-    return new Response('Missing NEXT_PUBLIC_WHOP_APP_ID', { status: 500 });
-  }
 
   const authorize = new URL(authorizeBase);
-  authorize.searchParams.set('client_id', appId);
+  if (appId) authorize.searchParams.set('client_id', appId);
   authorize.searchParams.set('redirect_uri', `${baseUrl}/api/auth/whop/callback`);
   authorize.searchParams.set('response_type', 'code');
   authorize.searchParams.set('scope', scope);
-  authorize.searchParams.set('state', Math.random().toString(36).slice(2));
   if (audience) authorize.searchParams.set('audience', audience);
-  // some providers require explicit prompt
-  authorize.searchParams.set('prompt', 'consent');
 
-  return Response.redirect(authorize.toString(), 302);
+  return new Response(
+    JSON.stringify({
+      url: authorize.toString(),
+      env: {
+        NEXT_PUBLIC_WHOP_APP_ID: !!appId,
+        NEXT_PUBLIC_BASE_URL: baseUrl,
+        NEXT_PUBLIC_WHOP_OAUTH_AUTHORIZE_URL: authorizeBase,
+        scope,
+        audience: audience ?? null,
+      },
+    }),
+    { headers: { 'content-type': 'application/json' } }
+  );
 }
+
+

@@ -42,3 +42,17 @@ export async function fetchWhopMembership(opts: {
     cache: 'no-store',
   });
 }
+
+export type MembershipCheck = { ok: boolean; isMember: boolean };
+
+export async function isMember(accessToken: string, companyId: string): Promise<MembershipCheck> {
+  try {
+    const res = await fetchWhopMembership({ accessToken, companyId });
+    if (!res.ok) return { ok: false, isMember: false };
+    const json = await res.json();
+    const active = Boolean(json?.status === 'active' || json?.membership?.status === 'active');
+    return { ok: true, isMember: active };
+  } catch {
+    return { ok: false, isMember: false };
+  }
+}

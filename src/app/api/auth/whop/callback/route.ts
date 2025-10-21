@@ -1,4 +1,5 @@
 import { exchangeWhopCodeForToken } from '@/lib/whop';
+import { cookies } from 'next/headers';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -11,9 +12,16 @@ export async function GET(request: Request) {
 
   try {
     const token = await exchangeWhopCodeForToken({ code, redirectUri });
-    return new Response(JSON.stringify({ ok: true, access_token: token.access_token, token_type: token.token_type }), {
-      headers: { 'content-type': 'application/json' },
+    const c = cookies();
+    c.set('whop_access_token', token.access_token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: true,
+      path: '/',
+      maxAge: token.expires_in ?? 60 * 60,
     });
+    // Redirect to home after login
+    return Response.redirect(`${process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'}/`, 302);
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'OAuth failed';
     return new Response(JSON.stringify({ ok: false, error: message }), {
