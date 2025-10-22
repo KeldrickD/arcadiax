@@ -25,3 +25,4 @@ export async function GET(request: Request) {
     headers: { 'content-type': 'application/json' },
   });
 }
+

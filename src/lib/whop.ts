@@ -56,3 +56,30 @@ export async function isMember(accessToken: string, companyId: string): Promise<
     return { ok: false, isMember: false };
   }
 }
+
+// Feed and push stubs (call Whop when OAuth is finalized). Safe no-ops when API key missing.
+export async function postToFeed(params: { companyId: string; title: string; body?: string; imageUrl?: string }): Promise<void> {
+  const apiKey = process.env.WHOP_API_KEY;
+  const apiBase = process.env.WHOP_API_BASE_URL ?? 'https://api.whop.com/v2';
+  if (!apiKey) return; // no-op in dev
+  try {
+    await fetch(`${apiBase}/companies/${params.companyId}/feed/posts`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ title: params.title, body: params.body, image_url: params.imageUrl }),
+    });
+  } catch {}
+}
+
+export async function sendPush(params: { companyId: string; title: string; body?: string }): Promise<void> {
+  const apiKey = process.env.WHOP_API_KEY;
+  const apiBase = process.env.WHOP_API_BASE_URL ?? 'https://api.whop.com/v2';
+  if (!apiKey) return; // no-op in dev
+  try {
+    await fetch(`${apiBase}/companies/${params.companyId}/notifications`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ title: params.title, body: params.body }),
+    });
+  } catch {}
+}

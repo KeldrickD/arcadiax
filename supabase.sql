@@ -7,6 +7,35 @@ create table if not exists public.accounts (
   created_at timestamptz not null default now()
 );
 
+-- Stored procedure to deduct credits and write ledger for spend + rake
+create or replace function public.arcx_spend_and_ledger(
+  p_member_id uuid,
+  p_spend_amount integer,
+  p_session_id uuid,
+  p_rake_amount integer default 0
+) returns void as $$
+declare
+  v_balance integer;
+begin
+  -- lock member row and check balance
+  update public.members set balance_credits = balance_credits - p_spend_amount
+  where id = p_member_id and balance_credits >= p_spend_amount;
+  if not found then
+    raise exception 'INSUFFICIENT_CREDITS';
+  end if;
+
+  -- ledger spend
+  insert into public.credit_ledger(member_id, type, amount, reference_type, reference_id, notes)
+  values (p_member_id, 'spend', -p_spend_amount, 'session', p_session_id, 'entry spend');
+
+  -- rake ledger
+  if p_rake_amount > 0 then
+    insert into public.credit_ledger(member_id, type, amount, reference_type, reference_id, notes)
+    values (p_member_id, 'rake', -p_rake_amount, 'session', p_session_id, 'platform rake');
+  end if;
+end;
+$$ language plpgsql security definer;
+
 create table if not exists public.members (
   id uuid primary key default gen_random_uuid(),
   whop_user_id text not null,
@@ -82,6 +111,27 @@ create table if not exists public.actions (
   created_at timestamptz not null default now()
 );
 
+-- Enforce one action per member per round
+create unique index if not exists actions_unique_round_member on public.actions(round_id, member_id);
+
+-- Require entry before action: trigger
+create or replace function public.arcx_require_entry() returns trigger as $$
+declare
+  v_session uuid;
+  v_count integer;
+begin
+  select session_id into v_session from public.game_rounds where id = NEW.round_id;
+  select count(*) into v_count from public.entries where session_id = v_session and member_id = NEW.member_id;
+  if coalesce(v_count,0) = 0 then
+    raise exception 'NOT_ENTERED';
+  end if;
+  return NEW;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists trg_actions_require_entry on public.actions;
+create trigger trg_actions_require_entry before insert on public.actions for each row execute function public.arcx_require_entry();
+
 create table if not exists public.iap_purchases (
   id uuid primary key default gen_random_uuid(),
   member_id uuid not null references public.members(id) on delete cascade,
@@ -145,5 +195,16 @@ create policy "deny_writes" on public.game_rounds for all to public using (false
 create policy "deny_writes" on public.entries for all to public using (false) with check (false);
 create policy "deny_writes" on public.actions for all to public using (false) with check (false);
 create policy "deny_writes" on public.iap_purchases for all to public using (false) with check (false);
+
+-- Allow writes from service role only (keep public denied)
+create policy if not exists "service_writes_games" on public.games for all to service_role using (true) with check (true);
+create policy if not exists "service_writes_sessions" on public.game_sessions for all to service_role using (true) with check (true);
+create policy if not exists "service_writes_rounds" on public.game_rounds for all to service_role using (true) with check (true);
+create policy if not exists "service_writes_entries" on public.entries for all to service_role using (true) with check (true);
+create policy if not exists "service_writes_actions" on public.actions for all to service_role using (true) with check (true);
+create policy if not exists "service_writes_ledger" on public.credit_ledger for all to service_role using (true) with check (true);
+create policy if not exists "service_writes_iap" on public.iap_purchases for all to service_role using (true) with check (true);
+create policy if not exists "service_writes_results" on public.results for all to service_role using (true) with check (true);
+create policy if not exists "service_writes_members" on public.members for all to service_role using (true) with check (true);
 
 
