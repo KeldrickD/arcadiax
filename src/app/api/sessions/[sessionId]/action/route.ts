@@ -99,6 +99,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ ses
     }
   }
 
+  // Type guard to satisfy TS: ensure round is defined before use
+  if (!round) {
+    return new Response(JSON.stringify({ ok: false, error: 'Round resolution failed' }), { status: 500, headers: { 'content-type': 'application/json' } });
+  }
+
   const { data: action, error: aErr } = await supabase
     .from('actions')
     .insert({ round_id: round.id, member_id: memberId, payload })
