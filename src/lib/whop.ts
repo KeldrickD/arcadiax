@@ -62,6 +62,15 @@ export async function postToFeed(params: { companyId: string; title: string; bod
   const apiKey = process.env.WHOP_API_KEY;
   const apiBase = process.env.WHOP_API_BASE_URL ?? 'https://api.whop.com/v2';
   if (!apiKey) return; // no-op in dev
+  // Quiet hours + caps (per-account overrides)
+  const { getAccountSettings } = await import('./settings');
+  const s = await getAccountSettings(params.companyId);
+  const quietStart = s.quietStartHour; // 22 = 10pm
+  const quietEnd = s.quietEndHour; // 8 = 8am
+  const feedCap = s.feedDailyCap;
+  try {
+    await enforceQuietAndCaps({ accountId: params.companyId, kind: 'feed', cap: feedCap, quietStartHour: quietStart, quietEndHour: quietEnd });
+  } catch { return; }
   try {
     await fetch(`${apiBase}/companies/${params.companyId}/feed/posts`, {
       method: 'POST',
@@ -75,6 +84,15 @@ export async function sendPush(params: { companyId: string; title: string; body?
   const apiKey = process.env.WHOP_API_KEY;
   const apiBase = process.env.WHOP_API_BASE_URL ?? 'https://api.whop.com/v2';
   if (!apiKey) return; // no-op in dev
+  // Quiet hours + caps (per-account overrides)
+  const { getAccountSettings } = await import('./settings');
+  const s = await getAccountSettings(params.companyId);
+  const quietStart = s.quietStartHour;
+  const quietEnd = s.quietEndHour;
+  const pushCap = s.pushDailyCap;
+  try {
+    await enforceQuietAndCaps({ accountId: params.companyId, kind: 'push', cap: pushCap, quietStartHour: quietStart, quietEndHour: quietEnd });
+  } catch { return; }
   try {
     await fetch(`${apiBase}/companies/${params.companyId}/notifications`, {
       method: 'POST',
@@ -82,6 +100,29 @@ export async function sendPush(params: { companyId: string; title: string; body?
       body: JSON.stringify({ title: params.title, body: params.body }),
     });
   } catch {}
+}
+
+async function enforceQuietAndCaps(opts: { accountId: string; kind: 'push'|'feed'; cap: number; quietStartHour: number; quietEndHour: number }) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !serviceKey) return;
+  const { createClient } = await import('@supabase/supabase-js');
+  const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
+  const now = new Date();
+  const hour = now.getHours();
+  const start = opts.quietStartHour % 24;
+  const end = opts.quietEndHour % 24;
+  const inQuiet = start < end ? (hour >= start && hour < end) : (hour >= start || hour < end);
+  if (inQuiet) throw new Error('QUIET_HOURS');
+  const day = now.toISOString().slice(0,10);
+  const { data } = await supabase
+    .from('notify_counters')
+    .upsert({ account_id: opts.accountId, kind: opts.kind, day, count: 0 }, { onConflict: 'account_id,kind,day' })
+    .select('id, count')
+    .maybeSingle();
+  const current = (data?.count ?? 0) as number;
+  if (current >= opts.cap) throw new Error('DAILY_CAP');
+  await supabase.from('notify_counters').update({ count: current + 1 }).eq('id', data?.id);
 }
 
 // User profile and memberships (best-effort; endpoint paths may vary by Whop API version)

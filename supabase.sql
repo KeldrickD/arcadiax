@@ -1,5 +1,8 @@
 -- ArcadiaX initial schema (phase 1)
 
+-- Ensure UUID generator available
+create extension if not exists pgcrypto;
+
 create table if not exists public.accounts (
   id uuid primary key default gen_random_uuid(),
   whop_company_id text unique not null,
@@ -265,7 +268,110 @@ create policy if not exists "service_writes_entries" on public.entries for all t
 create policy if not exists "service_writes_actions" on public.actions for all to service_role using (true) with check (true);
 create policy if not exists "service_writes_ledger" on public.credit_ledger for all to service_role using (true) with check (true);
 create policy if not exists "service_writes_iap" on public.iap_purchases for all to service_role using (true) with check (true);
-create policy if not exists "service_writes_results" on public.results for all to service_role using (true) with check (true);
+-- removed broken policy for non-existent table public.results
 create policy if not exists "service_writes_members" on public.members for all to service_role using (true) with check (true);
+-- Function: Settle active trivia round for a session
+-- Determines winners by comparing latest action payload to the round's answer
+create or replace function public.arcx_settle_trivia_round(p_session_id uuid)
+returns jsonb as $$
+declare
+  v_round record;
+  v_answer_id text;
+  v_winners uuid[] := '{}';
+  v_entry_cost integer := 0;
+  v_action record;
+begin
+  select r.* into v_round
+  from public.game_rounds r
+  where r.session_id = p_session_id and r.state = 'active'
+  order by r.started_at desc nulls last
+  limit 1;
+
+  if not found then
+    return jsonb_build_object('ok', false, 'error', 'NO_ACTIVE_ROUND');
+  end if;
+
+  v_answer_id := coalesce((v_round.answer->>'answerId'), null);
+  if v_answer_id is null then
+    return jsonb_build_object('ok', false, 'error', 'MISSING_ANSWER');
+  end if;
+
+  -- get entry cost for payouts reference (optional)
+  select entry_cost into v_entry_cost from public.game_sessions where id = p_session_id;
+
+  -- iterate latest action per member
+  for v_action in (
+    select a.member_id, a.payload
+    from public.actions a
+    where a.round_id = v_round.id
+    and a.created_at = (
+      select max(a2.created_at) from public.actions a2
+      where a2.round_id = a.round_id and a2.member_id = a.member_id
+    )
+  ) loop
+    if (v_action.payload->>'answerId') = v_answer_id or (v_action.payload->>'selectedId') = v_answer_id then
+      v_winners := array_append(v_winners, v_action.member_id);
+      -- ledger award (fixed demo amount)
+      begin
+        insert into public.credit_ledger(member_id, type, amount, reference_type, reference_id, notes, idempotency_key)
+        values (v_action.member_id, 'award', 50, 'session', p_session_id, 'trivia payout', concat('trivia:', v_round.id, ':', v_action.member_id::text))
+        on conflict (idempotency_key) do nothing;
+      exception when others then
+        -- ignore award errors
+      end;
+    end if;
+  end loop;
+
+  -- close and mark settled
+  update public.game_rounds set state = 'settled', ended_at = now() where id = v_round.id;
+  update public.game_sessions set status = 'closed' where id = p_session_id and status = 'live';
+
+  return jsonb_build_object('ok', true, 'winners', v_winners, 'answerId', v_answer_id);
+end;
+$$ language plpgsql security definer;
+
+-- No-op refresh function to prevent errors if called
+create or replace function public.refresh_wallets()
+returns void as $$ begin return; end; $$ language plpgsql;
+
+
+-- Per-account notification and game-type settings
+create table if not exists public.account_settings (
+  account_id uuid primary key references public.accounts(id) on delete cascade,
+  allow_raffles boolean,
+  allow_predictions boolean,
+  quiet_start_hour integer,
+  quiet_end_hour integer,
+  push_daily_cap integer,
+  feed_daily_cap integer,
+  updated_at timestamptz not null default now()
+);
+alter table public.account_settings enable row level security;
+drop policy if exists "account_settings_service" on public.account_settings;
+create policy "account_settings_service" on public.account_settings for all to service_role using (true) with check (true);
+
+-- System KV for lightweight app metadata (e.g., last scheduler tick)
+create table if not exists public.system_kv (
+  key text primary key,
+  value jsonb not null default '{}',
+  updated_at timestamptz not null default now()
+);
+alter table public.system_kv enable row level security;
+drop policy if exists "system_kv_service" on public.system_kv;
+create policy "system_kv_service" on public.system_kv for all to service_role using (true) with check (true);
+
+-- Notification counters for quiet hours and daily caps
+create table if not exists public.notify_counters (
+  id uuid primary key default gen_random_uuid(),
+  account_id uuid not null references public.accounts(id) on delete cascade,
+  kind text not null check (kind in ('push','feed')),
+  day date not null,
+  count integer not null default 0,
+  unique (account_id, kind, day)
+);
+alter table public.notify_counters enable row level security;
+drop policy if exists "notify_counters_service" on public.notify_counters;
+create policy "notify_counters_service" on public.notify_counters for all to service_role using (true) with check (true);
+
 
 

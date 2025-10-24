@@ -12,11 +12,12 @@ export async function GET(request: Request) {
 
   try {
     const token = await exchangeWhopCodeForToken({ code, redirectUri });
+    const isSecure = new URL(request.url).protocol === 'https:';
     const res = NextResponse.redirect(new URL('/', request.url));
     res.cookies.set('whop_access_token', token.access_token, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: true,
+      secure: isSecure,
       path: '/',
       maxAge: token.expires_in ?? 60 * 60,
     });
@@ -32,17 +33,24 @@ export async function GET(request: Request) {
         const display = me?.name ?? me?.username ?? null;
         const avatar = me?.avatar_url ?? me?.image_url ?? null;
         for (const m of memberships ?? []) {
-          const companyId = m?.company_id ?? m?.company?.id;
-          if (!companyId) continue;
+          const whopCompanyId = m?.company_id ?? m?.company?.id;
+          if (!whopCompanyId) continue;
+          const { data: acc } = await supabase
+            .from('accounts')
+            .select('id')
+            .eq('whop_company_id', whopCompanyId)
+            .maybeSingle();
+          const accountUuid = acc?.id as string | undefined;
+          if (!accountUuid) continue;
           const userId = me?.id ?? me?.user_id ?? 'whop';
           const { data: mem } = await supabase
             .from('members')
             .select('id')
-            .eq('account_id', companyId)
+            .eq('account_id', accountUuid)
             .eq('whop_user_id', userId)
             .maybeSingle();
           if (!mem) {
-            await supabase.from('members').insert({ account_id: companyId, whop_user_id: userId, display_name: display, avatar_url: avatar, role: 'member', balance_credits: 0 });
+            await supabase.from('members').insert({ account_id: accountUuid, whop_user_id: userId, display_name: display, avatar_url: avatar, role: 'member', balance_credits: 0 });
           } else {
             await supabase.from('members').update({ display_name: display, avatar_url: avatar }).eq('id', mem.id);
           }

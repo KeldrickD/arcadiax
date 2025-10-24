@@ -50,6 +50,11 @@ export const GET = withSentry(async (request: Request) => {
     }
   }
 
+  // persist last successful tick for health checks
+  try {
+    await supabase.from('system_kv').upsert({ key: 'scheduler:last_tick', value: { ts: Date.now() } }, { onConflict: 'key' });
+  } catch {}
+
   console.log(JSON.stringify({ kind: 'scheduler_tick', started: (due ?? []).length, checked: (active ?? []).length, ts: Date.now() }));
   const res = new Response(JSON.stringify({ ok: true, started: (due ?? []).length, checked: (active ?? []).length }), { headers: { 'content-type': 'application/json' } });
   logRequest('/api/scheduler/tick', { duration_ms: Date.now() - t0, started: (due ?? []).length, checked: (active ?? []).length });

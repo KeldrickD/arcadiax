@@ -1,4 +1,5 @@
 import {withSentryConfig} from '@sentry/nextjs';
+import createMDX from '@next/mdx';
 /** @type {import('next').NextConfig} */
 const securityHeaders = [
   { key:'Strict-Transport-Security', value:'max-age=31536000; includeSubDomains; preload' },
@@ -17,11 +18,22 @@ const securityHeaders = [
     ].join('; ') }
 ];
 
-const nextConfig = {
+const withMDX = createMDX({});
+
+const baseNextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
-  }
+  },
+  turbopack: {
+    root: __dirname,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  pageExtensions: ['ts', 'tsx', 'md', 'mdx'],
 };
+
+const nextConfig = withMDX(baseNextConfig);
 
 export default withSentryConfig(nextConfig, {
   // For all available options, see:

@@ -1,6 +1,6 @@
 import { headers, cookies } from 'next/headers';
 import { isMember } from '@/lib/whop';
-import { CreateGameForm, ScheduleSessionForm, StartTriviaRoundForm, QueueRoundForm } from '@/components/CreatorForms';
+import { CreateGameForm, ScheduleSessionForm, StartTriviaRoundForm, QueueRoundForm, CreatorSettingsForm } from '@/components/CreatorForms';
 import { ExportsPanel } from '@/components/ExportsPanel';
 import { AnalyticsCards } from '@/components/AnalyticsCards';
 
@@ -67,6 +67,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ comp
         <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
           <h3>Queue Round</h3>
           <RoundQueueStarter companyId={companyId} />
+        </div>
+        <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
+          <h3>Community Settings</h3>
+          <CreatorSettingsForm accountId={companyId} />
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { withSentry, logRequest } from '../../../../../sentry.server.config';
 import { postToFeed, sendPush } from '@/lib/whop';
+import { getAccountSettings } from '@/lib/settings';
 
 // Starts a new round. Body varies by type:
 // - trivia:     { type:'trivia', question, options:[{id,label}], answerId, durationSec? }
@@ -15,18 +16,32 @@ export const POST = withSentry(async (request: Request, { params }: { params: Pr
   let answer: any = null;
   let durationSec: number | undefined = body.durationSec;
 
+  // resolve account settings for gating
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !serviceKey) return new Response('Missing service role', { status: 500 });
+  const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
+  const { data: sessRow } = await supabase.from('game_sessions').select('game_id').eq('id', sessionId).maybeSingle();
+  const { data: gameRow } = await supabase.from('games').select('account_id').eq('id', (sessRow as any)?.game_id).maybeSingle();
+  const accountId = (gameRow as any)?.account_id as string | undefined;
+  const settings = accountId ? await getAccountSettings(accountId) : undefined;
+  const allowRaffles = settings?.allowRaffles ?? (process.env.ALLOW_RAFFLES ?? 'true') === 'true';
+  const allowPredictions = settings?.allowPredictions ?? (process.env.ALLOW_PREDICTIONS ?? 'true') === 'true';
+
   if (type === 'trivia') {
     const { question, options, answerId } = body;
     if (!question || !Array.isArray(options) || !answerId) return new Response('Invalid trivia body', { status: 400 });
     payload = { type: 'trivia', question, options, durationSec: durationSec ?? 20 };
     answer = { answerId };
   } else if (type === 'prediction') {
+    if (!allowPredictions) return new Response('Predictions disabled in this region', { status: 403 });
     const { prompt } = body;
     if (!prompt) return new Response('Invalid prediction body', { status: 400 });
     payload = { type: 'prediction', prompt, durationSec: durationSec ?? 30 };
     // answer to be set later as outcome in close
     answer = body.answerTemplate ?? {};
   } else if (type === 'raffle') {
+    if (!allowRaffles) return new Response('Raffles disabled in this region', { status: 403 });
     const { prompt, winners } = body;
     payload = { type: 'raffle', prompt: prompt ?? 'Raffle', winners: winners ?? 1, durationSec: durationSec ?? 20 };
     answer = {};
@@ -34,10 +49,7 @@ export const POST = withSentry(async (request: Request, { params }: { params: Pr
     return new Response('Unsupported type', { status: 400 });
   }
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-  if (!url || !serviceKey) return new Response('Missing service role', { status: 500 });
-  const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
+  // supabase already created above
 
   // Close any existing active round
   await supabase

@@ -41,16 +41,28 @@ export const POST = withSentry(async (request: Request, { params }: { params: Pr
       // Simple payout: exact match -> 10x entry_cost; within band -> 2x (band +/-1 if numeric)
       const { data: sess } = await supabase.from('game_sessions').select('entry_cost').eq('id', sessionId).maybeSingle();
       const entryCost = sess?.entry_cost ?? 0;
-      const { data: entries } = await supabase.from('entries').select('member_id, paid_credits, payload').eq('session_id', sessionId);
+      // Use latest action per member in this round as their prediction
+      const { data: actions } = await supabase
+        .from('actions')
+        .select('member_id, payload, created_at')
+        .eq('round_id', (round as any).id);
+      const latestByMember = new Map<string, any>();
+      for (const a of actions ?? []) {
+        const key = (a.member_id as string);
+        const prev = latestByMember.get(key);
+        if (!prev || new Date(a.created_at as any).getTime() > new Date(prev.created_at as any).getTime()) {
+          latestByMember.set(key, a);
+        }
+      }
       const winners: string[] = [];
-      for (const e of entries ?? []) {
-        const guess = e.payload?.guess ?? e.payload?.value;
+      for (const [member, a] of latestByMember.entries()) {
+        const guess = (a as any)?.payload?.guess ?? (a as any)?.payload?.value;
         let mult = 0;
         if (guess === outcome) mult = 10; else if (typeof guess === 'number' && typeof outcome === 'number' && Math.abs(guess - outcome) <= 1) mult = 2;
-        const payout = Math.floor((e.paid_credits ?? entryCost) * mult);
+        const payout = Math.floor((entryCost) * mult);
         if (payout > 0) {
-          winners.push(e.member_id as string);
-          await supabase.from('credit_ledger').insert({ member_id: e.member_id, type: 'award', amount: payout, reference_type: 'session', reference_id: sessionId, notes: 'prediction payout' });
+          winners.push(member);
+          await supabase.from('credit_ledger').insert({ member_id: member, type: 'award', amount: payout, reference_type: 'session', reference_id: sessionId, notes: 'prediction payout' });
         }
       }
       await supabase.from('game_rounds').update({ state: 'settled', ended_at: new Date().toISOString() }).eq('id', (round as any).id);

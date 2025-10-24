@@ -257,4 +257,88 @@ export function QueueRoundForm({ sessionId }: { sessionId: string }) {
   );
 }
 
+export function CreatorSettingsForm({ accountId }: { accountId: string }) {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [allowRaffles, setAllowRaffles] = useState(true);
+  const [allowPredictions, setAllowPredictions] = useState(true);
+  const [quietStartHour, setQuietStartHour] = useState(22);
+  const [quietEndHour, setQuietEndHour] = useState(8);
+  const [pushDailyCap, setPushDailyCap] = useState(3);
+  const [feedDailyCap, setFeedDailyCap] = useState(5);
+
+  useState(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const r = await fetch(`/api/creator/settings?accountId=${accountId}`, { cache: 'no-store' });
+        const j = await r.json();
+        if (j?.settings) {
+          setAllowRaffles(!!j.settings.allowRaffles);
+          setAllowPredictions(!!j.settings.allowPredictions);
+          setQuietStartHour(Number(j.settings.quietStartHour ?? 22));
+          setQuietEndHour(Number(j.settings.quietEndHour ?? 8));
+          setPushDailyCap(Number(j.settings.pushDailyCap ?? 3));
+          setFeedDailyCap(Number(j.settings.feedDailyCap ?? 5));
+        }
+      } catch {}
+      setLoading(false);
+    })();
+  });
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); setSaving(true); setMsg(null);
+    try {
+      const r = await fetch('/api/creator/settings', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ accountId, allowRaffles, allowPredictions, quietStartHour, quietEndHour, pushDailyCap, feedDailyCap }),
+      });
+      const j = await r.json();
+      if (!r.ok || !j.ok) throw new Error(j.error || 'Save failed');
+      setMsg('Settings saved');
+    } catch (err: any) { setMsg(`Error: ${err?.message ?? 'unknown'}`); }
+    setSaving(false);
+  };
+
+  return (
+    <form onSubmit={onSubmit} style={{ display: 'grid', gap: 8 }}>
+      <h4 style={{ margin: 0 }}>Community Settings</h4>
+      {loading ? <div>Loading…</div> : (
+        <>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="checkbox" checked={allowRaffles} onChange={e=>setAllowRaffles(e.target.checked)} /> Allow Raffles
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <input type="checkbox" checked={allowPredictions} onChange={e=>setAllowPredictions(e.target.checked)} /> Allow Predictions
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <label>
+              <span style={{ display: 'block', fontSize: 12 }}>Quiet start hour</span>
+              <input type="number" min={0} max={23} value={quietStartHour} onChange={e=>setQuietStartHour(parseInt(e.target.value || '22',10))} style={{ padding: 8, border: '1px solid #333', borderRadius: 8 }} />
+            </label>
+            <label>
+              <span style={{ display: 'block', fontSize: 12 }}>Quiet end hour</span>
+              <input type="number" min={0} max={23} value={quietEndHour} onChange={e=>setQuietEndHour(parseInt(e.target.value || '8',10))} style={{ padding: 8, border: '1px solid #333', borderRadius: 8 }} />
+            </label>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <label>
+              <span style={{ display: 'block', fontSize: 12 }}>Push daily cap</span>
+              <input type="number" min={0} max={50} value={pushDailyCap} onChange={e=>setPushDailyCap(parseInt(e.target.value || '3',10))} style={{ padding: 8, border: '1px solid #333', borderRadius: 8 }} />
+            </label>
+            <label>
+              <span style={{ display: 'block', fontSize: 12 }}>Feed daily cap</span>
+              <input type="number" min={0} max={50} value={feedDailyCap} onChange={e=>setFeedDailyCap(parseInt(e.target.value || '5',10))} style={{ padding: 8, border: '1px solid #333', borderRadius: 8 }} />
+            </label>
+          </div>
+        </>
+      )}
+      <button disabled={saving} type="submit" style={{ background: '#7C3AED', color: '#fff', padding: '8px 12px', borderRadius: 8 }}>{saving?'Saving…':'Save Settings'}</button>
+      {msg && <div style={{ fontSize: 12 }}>{msg}</div>}
+    </form>
+  );
+}
+
+
 

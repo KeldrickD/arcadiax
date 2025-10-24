@@ -4,16 +4,42 @@
 
 import * as Sentry from "@sentry/nextjs";
 
-Sentry.init({
-  dsn: "https://e230a3ca7165419e5865dafc71798dce@o4510242750988288.ingest.us.sentry.io/4510242752823296",
+// Initialize Sentry only if DSN provided
+(() => {
+  const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN;
+  if (!dsn) return;
+  Sentry.init({
+    dsn,
+    tracesSampleRate: Number(process.env.NEXT_PUBLIC_SENTRY_TRACES ?? process.env.SENTRY_TRACES ?? 1),
+    enableLogs: String(process.env.SENTRY_ENABLE_LOGS ?? 'true') === 'true',
+    sendDefaultPii: String(process.env.SENTRY_SEND_PII ?? 'true') === 'true',
+    environment: process.env.NEXT_PUBLIC_SENTRY_ENV ?? process.env.NODE_ENV,
+    release: process.env.NEXT_PUBLIC_SENTRY_RELEASE,
+  });
+})();
 
-  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-  tracesSampleRate: 1,
+export function withSentry<TArgs extends any[]>(
+  handler: (...args: TArgs) => Promise<Response>,
+  routeName?: string
+) {
+  return async (...args: TArgs): Promise<Response> => {
+    try {
+      return await handler(...args);
+    } catch (err: any) {
+      try {
+        Sentry.captureException(err, { tags: { route: routeName || 'unknown' } });
+      } catch {}
+      const message = err instanceof Error ? err.message : 'internal_error';
+      return new Response(JSON.stringify({ ok: false, error: message }), {
+        status: 500,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+  };
+}
 
-  // Enable logs to be sent to Sentry
-  enableLogs: true,
-
-  // Enable sending user PII (Personally Identifiable Information)
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
-  sendDefaultPii: true,
-});
+export function logRequest(route: string, extra?: Record<string, unknown>): void {
+  const payload = { route, ts: Date.now(), ...(extra || {}) };
+  try { Sentry.captureMessage(`api:${route}`, { level: 'info', extra: payload }); } catch {}
+  try { console.log(JSON.stringify(payload)); } catch {}
+}
