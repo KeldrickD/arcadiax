@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { withSentry, logRequest } from '../../../../../sentry.server.config';
+import { withSentry, logRequest } from '@/sentry.server.config';
 
 export const POST = withSentry(async (request: Request, { params }: { params: Promise<{ sessionId: string }> }) => {
   const t0 = Date.now();

@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import { withSentry, logRequest } from '../../../../sentry.server.config';
-import { rateLimitKey } from '../../../../lib/rateLimit';
+import { withSentry, logRequest } from '@/sentry.server.config';
+import { rateLimitKey } from '@/lib/rateLimit';
 
 export async function GET(request: Request) {
   // Allow GET for dev trigger

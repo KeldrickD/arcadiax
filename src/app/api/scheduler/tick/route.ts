@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { withSentry, logRequest } from '../../../../sentry.server.config';
+import { withSentry, logRequest } from '@/sentry.server.config';
 
 // Call this via cron every minute. It starts queued rounds whose start time has arrived,
 // and auto-closes rounds whose duration elapsed (best-effort, idempotent)

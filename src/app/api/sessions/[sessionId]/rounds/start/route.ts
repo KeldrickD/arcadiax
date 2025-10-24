@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { withSentry, logRequest } from '../../../../../sentry.server.config';
+import { withSentry, logRequest } from '@/sentry.server.config';
 import { postToFeed, sendPush } from '@/lib/whop';
 import { getAccountSettings } from '@/lib/settings';
 

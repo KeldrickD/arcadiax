@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import { withSentry, logRequest } from '../../../../../sentry.server.config';
-import { rateLimitKey } from '../../../../../lib/rateLimit';
+import { withSentry, logRequest } from '@/sentry.server.config';
+import { rateLimitKey } from '@/lib/rateLimit';
 import { postToFeed, sendPush } from '@/lib/whop';
 
 // Closes the active round, then settles it in a DB transaction via arcx_settle_trivia_round
