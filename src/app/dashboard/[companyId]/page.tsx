@@ -6,7 +6,7 @@ import { AnalyticsCards } from '@/components/AnalyticsCards';
 
 export default async function DashboardPage({ params }: { params: Promise<{ companyId: string }> }) {
   const { companyId } = await params;
-  const c = cookies();
+  const c = await cookies();
   const access = c.get('whop_access_token')?.value ?? '';
   const devBypass = process.env.WHOP_BYPASS_AUTH === 'true';
   if (!devBypass) {
