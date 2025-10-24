@@ -1,5 +1,7 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+Deployment is managed via Vercel with Git integration. Pushing to `main` triggers a deploy.
+
 ## Getting Started
 
 First, run the development server:
