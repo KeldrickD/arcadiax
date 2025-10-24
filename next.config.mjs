@@ -25,7 +25,7 @@ const baseNextConfig = {
     return [{ source: '/:path*', headers: securityHeaders }];
   },
   turbopack: {
-    root: __dirname,
+    root: process.cwd(),
   },
   eslint: {
     ignoreDuringBuilds: true,
