@@ -28,7 +28,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ comp
       );
     }
   }
-  const h = headers();
+  const h = await headers();
   const host = h.get('x-forwarded-host') ?? h.get('host');
   const proto = h.get('x-forwarded-proto') ?? 'http';
   const base = host ? `${proto}://${host}` : '';
@@ -79,7 +79,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ comp
 
 // Server component to fetch the latest sessionId quickly
 async function RoundStarter({ companyId }: { companyId: string }) {
-  const res = await fetch(`${(headers().get('x-forwarded-proto') ?? 'http')}://${headers().get('host')}/api/sessions?accountId=${companyId}`, { cache: 'no-store' });
+  const hh = await headers();
+  const res = await fetch(`${(hh.get('x-forwarded-proto') ?? 'http')}://${hh.get('host')}/api/sessions?accountId=${companyId}`, { cache: 'no-store' });
   const j = await res.json();
   const firstSessionId = (j.items?.[0]?.id) as string | undefined;
   if (!firstSessionId) return <div>No sessions found yet. Schedule a session first.</div>;
@@ -87,7 +88,8 @@ async function RoundStarter({ companyId }: { companyId: string }) {
 }
 
 async function RoundQueueStarter({ companyId }: { companyId: string }) {
-  const res = await fetch(`${(headers().get('x-forwarded-proto') ?? 'http')}://${headers().get('host')}/api/sessions?accountId=${companyId}`, { cache: 'no-store' });
+  const hh = await headers();
+  const res = await fetch(`${(hh.get('x-forwarded-proto') ?? 'http')}://${hh.get('host')}/api/sessions?accountId=${companyId}`, { cache: 'no-store' });
   const j = await res.json();
   const firstSessionId = (j.items?.[0]?.id) as string | undefined;
   if (!firstSessionId) return <div>No sessions found yet. Schedule a session first.</div>;
