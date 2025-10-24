@@ -172,4 +172,89 @@ export function StartTriviaRoundForm({ sessionId }: { sessionId: string }) {
   );
 }
 
+export function QueueRoundForm({ sessionId }: { sessionId: string }) {
+  const router = useRouter();
+  const [type, setType] = useState<'trivia'|'prediction'|'raffle'>('trivia');
+  const [question, setQuestion] = useState('2+2?');
+  const [options, setOptions] = useState([{ id: 'a', label: '3' }, { id: 'b', label: '4' }]);
+  const [answerId, setAnswerId] = useState('b');
+  const [prompt, setPrompt] = useState('Predict BTC close');
+  const [winners, setWinners] = useState(1);
+  const [duration, setDuration] = useState(20);
+  const [startsAt, setStartsAt] = useState('');
+  const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); setBusy(true); setMsg(null);
+    try {
+      const payload: any = { type, durationSec: duration };
+      if (type === 'trivia') { payload.question = question; payload.options = options; payload.answer = { answerId }; }
+      if (type === 'prediction') { payload.prompt = prompt; payload.answer = {}; }
+      if (type === 'raffle') { payload.prompt = prompt; payload.answer = {}; payload.winners = winners; }
+      const r = await fetch('/api/creator/rounds/queue', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sessionId, startsAt, ...payload }) });
+      const j = await r.json();
+      if (!r.ok || !j.ok) throw new Error(j.error || 'Queue failed');
+      setMsg('Round queued'); router.refresh();
+    } catch (err: any) { setMsg(`Error: ${err?.message ?? 'unknown'}`); }
+    setBusy(false);
+  };
+
+  return (
+    <form onSubmit={onSubmit} style={{ display: 'grid', gap: 8 }}>
+      <label>
+        <span style={{ display: 'block', fontSize: 12 }}>Type</span>
+        <select value={type} onChange={e=>setType(e.target.value as any)} style={{ padding: 8, border: '1px solid #333', borderRadius: 8 }}>
+          <option value="trivia">Trivia</option>
+          <option value="prediction">Prediction</option>
+          <option value="raffle">Raffle</option>
+        </select>
+      </label>
+      <label>
+        <span style={{ display: 'block', fontSize: 12 }}>Starts at</span>
+        <input type="datetime-local" value={startsAt} onChange={e=>setStartsAt(e.target.value)} style={{ padding: 8, border: '1px solid #333', borderRadius: 8 }} />
+      </label>
+      {type==='trivia' && (
+        <>
+          <label>
+            <span style={{ display: 'block', fontSize: 12 }}>Question</span>
+            <input value={question} onChange={e=>setQuestion(e.target.value)} style={{ padding: 8, border: '1px solid #333', borderRadius: 8 }} />
+          </label>
+          <div>
+            <span style={{ display: 'block', fontSize: 12, marginBottom: 4 }}>Options</span>
+            {options.map((opt, idx) => (
+              <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+                <input value={opt.label} onChange={e => { const next=[...options]; next[idx]={...next[idx], label:e.target.value}; setOptions(next); }} style={{ padding: 6, border: '1px solid #333', borderRadius: 8, flex: 1 }} />
+                <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <input type="radio" name="ansq" checked={answerId === opt.id} onChange={()=>setAnswerId(opt.id)} /> Correct
+                </label>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      {type!=='trivia' && (
+        <label>
+          <span style={{ display: 'block', fontSize: 12 }}>Prompt</span>
+          <input value={prompt} onChange={e=>setPrompt(e.target.value)} style={{ padding: 8, border: '1px solid #333', borderRadius: 8 }} />
+        </label>
+      )}
+      {type==='raffle' && (
+        <label>
+          <span style={{ display: 'block', fontSize: 12 }}>Winners</span>
+          <input type="number" min={1} value={winners} onChange={e=>setWinners(parseInt(e.target.value || '1',10))} style={{ padding: 8, border: '1px solid #333', borderRadius: 8 }} />
+        </label>
+      )}
+      <label>
+        <span style={{ display: 'block', fontSize: 12 }}>Duration (s)</span>
+        <input type="number" min={5} value={duration} onChange={e => setDuration(parseInt(e.target.value || '20', 10))} style={{ padding: 8, border: '1px solid #333', borderRadius: 8 }} />
+      </label>
+      <button disabled={busy} type="submit" style={{ background: '#00E0FF', color: '#000', padding: '8px 12px', borderRadius: 8 }}>
+        {busy ? 'Queueing…' : 'Queue Round'}
+      </button>
+      {msg && <div style={{ fontSize: 12 }}>{msg}</div>}
+    </form>
+  );
+}
+
 

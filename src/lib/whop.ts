@@ -83,3 +83,31 @@ export async function sendPush(params: { companyId: string; title: string; body?
     });
   } catch {}
 }
+
+// User profile and memberships (best-effort; endpoint paths may vary by Whop API version)
+export async function fetchWhopMe(accessToken: string): Promise<any | null> {
+  const bases = [process.env.WHOP_API_BASE_URL ?? 'https://api.whop.com/v2', 'https://api.whop.com'];
+  for (const base of bases) {
+    try {
+      const r = await fetch(`${base}/me`, { headers: { authorization: `Bearer ${accessToken}` }, cache: 'no-store' });
+      if (r.ok) return await r.json();
+    } catch {}
+    try {
+      const r = await fetch(`${base}/users/me`, { headers: { authorization: `Bearer ${accessToken}` }, cache: 'no-store' });
+      if (r.ok) return await r.json();
+    } catch {}
+  }
+  return null;
+}
+
+export async function fetchWhopMyMemberships(accessToken: string): Promise<any[]> {
+  const base = process.env.WHOP_API_BASE_URL ?? 'https://api.whop.com/v2';
+  const paths = ['/me/memberships', '/memberships'];
+  for (const p of paths) {
+    try {
+      const r = await fetch(`${base}${p}`, { headers: { authorization: `Bearer ${accessToken}` }, cache: 'no-store' });
+      if (r.ok) { const j = await r.json(); return Array.isArray(j) ? j : (j.data ?? []); }
+    } catch {}
+  }
+  return [];
+}

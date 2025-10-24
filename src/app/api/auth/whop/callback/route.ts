@@ -1,4 +1,4 @@
-import { exchangeWhopCodeForToken } from '@/lib/whop';
+import { exchangeWhopCodeForToken, fetchWhopMe, fetchWhopMyMemberships } from '@/lib/whop';
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
@@ -20,6 +20,35 @@ export async function GET(request: Request) {
       path: '/',
       maxAge: token.expires_in ?? 60 * 60,
     });
+    // Best-effort: map profile to members
+    try {
+      const me = await fetchWhopMe(token.access_token);
+      const memberships = await fetchWhopMyMemberships(token.access_token);
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+      if (url && serviceKey) {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
+        const display = me?.name ?? me?.username ?? null;
+        const avatar = me?.avatar_url ?? me?.image_url ?? null;
+        for (const m of memberships ?? []) {
+          const companyId = m?.company_id ?? m?.company?.id;
+          if (!companyId) continue;
+          const userId = me?.id ?? me?.user_id ?? 'whop';
+          const { data: mem } = await supabase
+            .from('members')
+            .select('id')
+            .eq('account_id', companyId)
+            .eq('whop_user_id', userId)
+            .maybeSingle();
+          if (!mem) {
+            await supabase.from('members').insert({ account_id: companyId, whop_user_id: userId, display_name: display, avatar_url: avatar, role: 'member', balance_credits: 0 });
+          } else {
+            await supabase.from('members').update({ display_name: display, avatar_url: avatar }).eq('id', mem.id);
+          }
+        }
+      }
+    } catch {}
     return res;
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'OAuth failed';

@@ -1,11 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
+import { withSentry, logRequest } from '../../../../../sentry.server.config';
 import { postToFeed, sendPush } from '@/lib/whop';
 
 // Starts a new round. Body varies by type:
 // - trivia:     { type:'trivia', question, options:[{id,label}], answerId, durationSec? }
 // - prediction: { type:'prediction', prompt, durationSec?, answerTemplate?: any }
 // - raffle:     { type:'raffle', prompt?, winners?: number, durationSec? }
-export async function POST(request: Request, { params }: { params: Promise<{ sessionId: string }> }) {
+export const POST = withSentry(async (request: Request, { params }: { params: Promise<{ sessionId: string }> }) => {
+  const t0 = Date.now();
   const { sessionId } = await params;
   const body = await request.json().catch(() => ({}));
   const type = body.type ?? 'trivia';
@@ -89,7 +91,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ ses
     }
   } catch {}
 
-  return new Response(JSON.stringify({ ok: true, round: data, type }), { headers: { 'content-type': 'application/json' } });
-}
+  const res = new Response(JSON.stringify({ ok: true, round: data, type }), { headers: { 'content-type': 'application/json' } });
+  logRequest('/api/sessions/[id]/rounds/start', { session_id: sessionId, duration_ms: Date.now() - t0 });
+  return res;
+}, '/api/sessions/[id]/rounds/start');
 
 

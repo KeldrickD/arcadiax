@@ -47,6 +47,10 @@ create table if not exists public.members (
   unique (whop_user_id, account_id)
 );
 
+-- Optional profile fields for feed/widgets
+alter table public.members add column if not exists display_name text;
+alter table public.members add column if not exists avatar_url text;
+
 create table if not exists public.credit_ledger (
   id uuid primary key default gen_random_uuid(),
   member_id uuid not null references public.members(id) on delete cascade,
@@ -57,6 +61,29 @@ create table if not exists public.credit_ledger (
   notes text,
   created_at timestamptz not null default now()
 );
+
+-- Idempotency support for ledger
+alter table public.credit_ledger add column if not exists idempotency_key text unique;
+
+-- Join attempts tracking and DB-level rate limiter
+create table if not exists public.join_attempts(
+  account_id uuid not null,
+  member_id uuid not null,
+  at timestamptz not null default now()
+);
+
+create or replace function public.arcx_rate_limit_join(_account uuid, _member uuid, _max int, _seconds int)
+returns void language plpgsql as $$
+declare cnt int;
+begin
+  delete from public.join_attempts where at < now() - interval '10 minutes';
+  insert into public.join_attempts(account_id, member_id) values (_account, _member);
+  select count(*) into cnt from public.join_attempts
+  where account_id=_account and member_id=_member and at > now() - make_interval(secs => _seconds);
+  if cnt > _max then
+    raise exception 'RATE_LIMIT';
+  end if;
+end; $$;
 
 create table if not exists public.games (
   id uuid primary key default gen_random_uuid(),
@@ -143,6 +170,40 @@ create table if not exists public.iap_purchases (
   created_at timestamptz not null default now()
 );
 
+-- Webhook idempotency store
+create table if not exists public.webhook_events (
+  event_id text primary key,
+  received_at timestamptz not null default now()
+);
+
+-- Prevent negative balances
+create or replace function public.ensure_non_negative_balance() returns trigger as $$
+begin
+  if new.balance_credits < 0 then
+    raise exception 'NEGATIVE_BALANCE';
+  end if;
+  return new;
+end; $$ language plpgsql;
+
+drop trigger if exists trg_non_negative_balance on public.members;
+create trigger trg_non_negative_balance before update of balance_credits on public.members
+for each row execute function public.ensure_non_negative_balance();
+
+-- Queue of upcoming rounds (server-side schedules)
+create table if not exists public.rounds_queue (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid not null references public.game_sessions(id) on delete cascade,
+  type text not null check (type in ('trivia','prediction','raffle')),
+  payload jsonb not null default '{}',
+  answer jsonb not null default '{}',
+  starts_at timestamptz not null,
+  duration_sec integer not null default 20,
+  status text not null default 'pending', -- pending|running|completed|cancelled
+  created_at timestamptz not null default now()
+);
+create index if not exists rounds_queue_session_idx on public.rounds_queue(session_id);
+create index if not exists rounds_queue_starts_idx on public.rounds_queue(starts_at);
+
 -- RLS policies
 alter table public.accounts enable row level security;
 alter table public.members enable row level security;
@@ -154,7 +215,7 @@ alter table public.entries enable row level security;
 alter table public.actions enable row level security;
 alter table public.iap_purchases enable row level security;
 
--- For demo/dev, open read on public; tighten in prod with JWT claims
+-- Tighten reads: drop public reads and allow service_role only
 drop policy if exists "read_all_public" on public.accounts;
 drop policy if exists "read_all_public" on public.members;
 drop policy if exists "read_all_public" on public.games;
@@ -165,15 +226,15 @@ drop policy if exists "read_all_public" on public.actions;
 drop policy if exists "read_all_public" on public.credit_ledger;
 drop policy if exists "read_all_public" on public.iap_purchases;
 
-create policy "read_all_public" on public.accounts for select using (true);
-create policy "read_all_public" on public.members for select using (true);
-create policy "read_all_public" on public.games for select using (true);
-create policy "read_all_public" on public.game_sessions for select using (true);
-create policy "read_all_public" on public.game_rounds for select using (true);
-create policy "read_all_public" on public.entries for select using (true);
-create policy "read_all_public" on public.actions for select using (true);
-create policy "read_all_public" on public.credit_ledger for select using (true);
-create policy "read_all_public" on public.iap_purchases for select using (true);
+create policy if not exists "service_reads_accounts" on public.accounts for select to service_role using (true);
+create policy if not exists "service_reads_members" on public.members for select to service_role using (true);
+create policy if not exists "service_reads_games" on public.games for select to service_role using (true);
+create policy if not exists "service_reads_sessions" on public.game_sessions for select to service_role using (true);
+create policy if not exists "service_reads_rounds" on public.game_rounds for select to service_role using (true);
+create policy if not exists "service_reads_entries" on public.entries for select to service_role using (true);
+create policy if not exists "service_reads_actions" on public.actions for select to service_role using (true);
+create policy if not exists "service_reads_ledger" on public.credit_ledger for select to service_role using (true);
+create policy if not exists "service_reads_iap" on public.iap_purchases for select to service_role using (true);
 
 -- Restrict writes to future JWT claims (placeholder; wire to Whop auth later)
 drop policy if exists "deny_writes" on public.accounts;

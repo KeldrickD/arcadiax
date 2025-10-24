@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { withSentry, logRequest } from '../../../../../sentry.server.config';
+import { rateLimitKey } from '../../../../../lib/rateLimit';
 
 export async function GET(request: Request, { params }: { params: Promise<{ sessionId: string }> }) {
   const { sessionId } = await params;
@@ -19,10 +21,22 @@ export async function GET(request: Request, { params }: { params: Promise<{ sess
   );
 }
 
-export async function POST(request: Request, { params }: { params: Promise<{ sessionId: string }> }) {
+export const POST = withSentry(async (request: Request, { params }: { params: Promise<{ sessionId: string }> }) => {
+  const t0 = Date.now();
+  const ip = (request.headers.get('x-forwarded-for') || '').split(',')[0] || request.headers.get('x-real-ip') || null;
+  if (!rateLimitKey(String(ip), '/api/sessions/enter', 60, 60)) return new Response(JSON.stringify({ ok:false, error:'RATE_LIMIT_IP' }), { status: 429, headers: { 'content-type': 'application/json' } });
   const { sessionId } = await params;
   const body = await request.json().catch(() => ({}));
   let memberId: string | undefined = body.memberId;
+  // Simple in-memory rate limiter (best-effort per instance)
+  (globalThis as any).__arcx_join_rl = (globalThis as any).__arcx_join_rl || new Map<string, number[]>();
+  const key = `${memberId || 'unknown'}:${sessionId}`;
+  const now = Date.now();
+  const winMs = 10_000; const max = 5;
+  const arr: number[] = (globalThis as any).__arcx_join_rl.get(key) || [];
+  const keep = arr.filter(t => now - t < winMs);
+  if (keep.length >= max) return new Response(JSON.stringify({ ok:false, error:'RATE_LIMIT' }), { headers:{'content-type':'application/json'}, status: 429 });
+  keep.push(now); (globalThis as any).__arcx_join_rl.set(key, keep);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
   if (!url || !serviceKey) return new Response('Missing service role', { status: 500 });
@@ -36,10 +50,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ ses
     .maybeSingle();
   if (sErr) return new Response(sErr.message, { status: 500 });
   if (!session) return new Response('Session not found', { status: 404 });
-  if (session.status !== 'lobby' && session.status !== 'live') return new Response('Session closed', { status: 400 });
+  // Only allow entry during lobby
+  if (session.status !== 'lobby') return new Response(JSON.stringify({ ok: false, error: 'ENTRY_CLOSED' }), { status: 200, headers: { 'content-type': 'application/json' } });
 
   // Resolve accountId for potential dev member creation
   const accountId = (session as any)?.game?.account_id as string | undefined;
+  if (!accountId) return new Response('accountId not found', { status: 500 });
+
+  // DB-level rate limit (defense in depth)
+  const rl = await supabase.rpc('arcx_rate_limit_join', { _account: accountId, _member: memberId, _max: 5, _seconds: 10 });
+  if ((rl as any)?.error) {
+    return new Response(JSON.stringify({ ok: false, error: 'RATE_LIMIT' }), { status: 429, headers: { 'content-type': 'application/json' } });
+  }
 
   // Dev bypass: resolve or create a member if missing/invalid
   const isUuid = (v?: string) => !!v && /^[0-9a-fA-F-]{36}$/.test(v);
@@ -121,7 +143,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ ses
     .maybeSingle();
   if (eErr) return new Response(eErr.message, { status: 500 });
 
-  return new Response(JSON.stringify({ ok: true, entryId: entry?.id ?? null }), { headers: { 'content-type': 'application/json' } });
-}
+  const res = new Response(JSON.stringify({ ok: true, entryId: entry?.id ?? null }), { headers: { 'content-type': 'application/json' } });
+  logRequest('/api/sessions/[id]/enter', { session_id: sessionId, duration_ms: Date.now() - t0 });
+  return res;
+}, '/api/sessions/[id]/enter');
 
 

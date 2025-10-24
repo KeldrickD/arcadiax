@@ -36,6 +36,23 @@ export default function SessionPage({ params }: Props) {
   const [answerLocked, setAnswerLocked] = useState<boolean>(false);
   const [correctAnswerId, setCorrectAnswerId] = useState<string | null>(null);
   const actionsChannelRef = useRef<any>(null);
+  const presenceChannelRef = useRef<any>(null);
+  const [presenceCount, setPresenceCount] = useState<number>(0);
+  const [showConfetti, setShowConfetti] = useState<boolean>(false);
+  useEffect(() => {
+    if (!showConfetti) return;
+    (async () => {
+      try {
+        const mod: any = await import('https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.0/dist/confetti.module.mjs');
+        const confetti = mod.default || mod;
+        const colors = ['#7C3AED','#00E0FF','#FFD95A'];
+        confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 }, colors });
+        setTimeout(() => confetti({ particleCount: 60, spread: 90, colors }), 300);
+      } catch {
+        // ignore
+      }
+    })();
+  }, [showConfetti]);
 
   useEffect(() => {
     let aborted = false;
@@ -96,6 +113,9 @@ export default function SessionPage({ params }: Props) {
           if (p?.system === 'settled') {
             setCorrectAnswerId(p.answerId ?? null);
             setToast('Round settled'); setTimeout(()=>setToast(null), 2000);
+            if (selectedAnswerId && p.answerId && selectedAnswerId === p.answerId) {
+              setShowConfetti(true); setTimeout(()=>setShowConfetti(false), 2500);
+            }
           }
           setEvents(prev => [`action ${payload.eventType}`, ...prev].slice(0, 50));
           // refresh leaderboard on action changes
@@ -191,9 +211,29 @@ export default function SessionPage({ params }: Props) {
     // initial leaderboard
     void fetch(`/api/leaderboard?sessionId=${sessionId}`).then(r => r.json()).then(j => setLeaderboard(j.items ?? [])).catch(() => {});
 
+    // Presence: track joined users in session
+    try {
+      const key = memberId || `guest_${Math.random().toString(36).slice(2)}`;
+      presenceChannelRef.current = supabase.channel(`presence_session_${sessionId}`, {
+        config: { presence: { key } },
+      });
+      presenceChannelRef.current.on('presence', { event: 'sync' }, () => {
+        const state = presenceChannelRef.current.presenceState();
+        let count = 0;
+        for (const _k in state) { count += (state[_k] as any[]).length; }
+        setPresenceCount(count);
+      });
+      presenceChannelRef.current.subscribe(async (status: string) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannelRef.current.track({ at: Date.now(), sessionId });
+        }
+      });
+    } catch {}
+
     return () => {
       if (actionsChannelRef.current) supabase.removeChannel(actionsChannelRef.current);
       supabase.removeChannel(roundsChannel);
+      if (presenceChannelRef.current) supabase.removeChannel(presenceChannelRef.current);
     };
   }, [sessionId]);
 
@@ -240,12 +280,17 @@ export default function SessionPage({ params }: Props) {
             <div style={{ fontWeight: 600 }}>{question}</div>
             {options.map(opt => (
               <label key={opt.id} style={{ display: 'block', marginTop: 6 }}>
-                <input type="radio" name="answer" value={opt.id} checked={selectedAnswerId === opt.id} onChange={() => setSelectedAnswerId(opt.id)} />{' '}
+                <input type="radio" name="answer" value={opt.id} checked={selectedAnswerId === opt.id} disabled={answerLocked || (timeLeft!==null && timeLeft<=0)} onChange={() => setSelectedAnswerId(opt.id)} />{' '}
                 {opt.label}
               </label>
             ))}
             {timeLeft != null && (
-              <div style={{ marginTop: 6, opacity: 0.8 }}>Time left: {timeLeft}s</div>
+              <div style={{ marginTop: 6 }}>
+                <div style={{ fontSize: 12, opacity: 0.8 }}>Time left: {timeLeft}s</div>
+                <div style={{ height: 6, background: '#333', borderRadius: 6, overflow: 'hidden', marginTop: 4, width: 260 }}>
+                  <div style={{ height: 6, background: '#7C3AED', width: `${Math.max(0, Math.min(100, ((timeLeft ?? 0) / (Number((session as any)?.payload?.durationSec ?? 0) || (timeLeft || 1))) * 100))}%`, transition: 'width 1s linear' }} />
+                </div>
+              </div>
             )}
           </div>
         )}
@@ -356,6 +401,7 @@ export default function SessionPage({ params }: Props) {
       </div>
       <div style={{ marginTop: 16 }}>
         <h3>Live Events (Supabase Realtime)</h3>
+        <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 6 }}>Players joined: {presenceCount}</div>
         <ul>
           {events.map((e, i) => (
             <li key={i} style={{ fontFamily: "monospace" }}>{e}</li>
@@ -363,13 +409,38 @@ export default function SessionPage({ params }: Props) {
         </ul>
       </div>
       {correctAnswerId && (
-        <div style={{ marginTop: 12, padding: 12, border: '1px solid #333', borderRadius: 8 }}>
-          <div>Correct answer: {options.find(o => o.id === correctAnswerId)?.label ?? correctAnswerId}</div>
-          {selectedAnswerId && (
-            <div style={{ color: selectedAnswerId === correctAnswerId ? '#16a34a' : '#dc2626' }}>
-              Your answer: {options.find(o => o.id === selectedAnswerId)?.label ?? selectedAnswerId} — {selectedAnswerId === correctAnswerId ? 'Correct' : 'Incorrect'}
+        <div style={{ marginTop: 12 }}>
+          <div style={{ perspective: 1000 }}>
+            <div style={{
+              width: 320,
+              transformStyle: 'preserve-3d',
+              transition: 'transform 600ms',
+              transform: 'rotateY(180deg)',
+            }}>
+              <div style={{
+                position: 'relative',
+                padding: 12,
+                border: '1px solid #333',
+                borderRadius: 8,
+                backfaceVisibility: 'hidden',
+              }} />
+              <div style={{
+                position: 'relative',
+                padding: 12,
+                border: '1px solid #333',
+                borderRadius: 8,
+                backfaceVisibility: 'hidden',
+                transform: 'rotateY(180deg)'
+              }}>
+                <div>Correct answer: {options.find(o => o.id === correctAnswerId)?.label ?? correctAnswerId}</div>
+                {selectedAnswerId && (
+                  <div style={{ color: selectedAnswerId === correctAnswerId ? '#16a34a' : '#dc2626' }}>
+                    Your answer: {options.find(o => o.id === selectedAnswerId)?.label ?? selectedAnswerId} — {selectedAnswerId === correctAnswerId ? 'Correct' : 'Incorrect'}
+                  </div>
+                )}
+              </div>
             </div>
-          )}
+          </div>
         </div>
       )}
       {toast && (
@@ -377,6 +448,7 @@ export default function SessionPage({ params }: Props) {
           {toast}
         </div>
       )}
+      {/* canvas-confetti fires without needing a persistent element */}
       <div style={{ marginTop: 16 }}>
         <h3>Leaderboard</h3>
         <ol>

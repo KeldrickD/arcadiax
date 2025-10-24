@@ -1,8 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
+import { withSentry, logRequest } from '../../../../../sentry.server.config';
+import { rateLimitKey } from '../../../../../lib/rateLimit';
 import { postToFeed, sendPush } from '@/lib/whop';
 
 // Closes the active round, then settles it in a DB transaction via arcx_settle_trivia_round
-export async function POST(request: Request, { params }: { params: Promise<{ sessionId: string }> }) {
+export const POST = withSentry(async (request: Request, { params }: { params: Promise<{ sessionId: string }> }) => {
+  const t0 = Date.now();
+  const ip = (request.headers.get('x-forwarded-for') || '').split(',')[0] || request.headers.get('x-real-ip') || null;
+  if (!rateLimitKey(String(ip), '/api/sessions/rounds/close', 60, 30)) return new Response(JSON.stringify({ ok:false, error:'RATE_LIMIT_IP' }), { status: 429, headers: { 'content-type': 'application/json' } });
   const { sessionId } = await params;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
@@ -105,12 +110,23 @@ export async function POST(request: Request, { params }: { params: Promise<{ ses
       .eq('id', sess?.game_id)
       .maybeSingle();
     if (game?.account_id) {
-      await postToFeed({ companyId: game.account_id, title: 'Round settled', body: `Winners: ${(settleJson?.winners ?? []).length}` });
+      // Fetch winner names
+      let names = [] as string[];
+      if (Array.isArray(settleJson?.winners) && (settleJson.winners as any[]).length) {
+        const { data: mrows } = await supabase
+          .from('members')
+          .select('id, display_name')
+          .in('id', settleJson.winners as string[]);
+        names = (mrows ?? []).map(m => (m.display_name as string) || (m.id as string).slice(0,8));
+      }
+      await postToFeed({ companyId: game.account_id, title: 'Round settled', body: `Winners: ${names.join(', ')}` });
       await sendPush({ companyId: game.account_id, title: 'Round settled', body: `Check the winners!` });
     }
   } catch {}
 
-  return new Response(JSON.stringify(settleJson ?? { ok: true }), { headers: { 'content-type': 'application/json' } });
-}
+  const res = new Response(JSON.stringify(settleJson ?? { ok: true }), { headers: { 'content-type': 'application/json' } });
+  logRequest('/api/sessions/[id]/rounds/close', { session_id: sessionId, duration_ms: Date.now() - t0 });
+  return res;
+}, '/api/sessions/[id]/rounds/close');
 
 

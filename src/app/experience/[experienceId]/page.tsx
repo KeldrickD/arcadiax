@@ -1,6 +1,8 @@
 import { headers, cookies } from 'next/headers';
 import { isMember } from '@/lib/whop';
 import { createClient } from '@supabase/supabase-js';
+import { SessionPresenceList } from '@/components/SessionPresenceList';
+import { RecentWinners } from '@/components/RecentWinners';
 
 export default async function ExperiencePage({ params }: { params: Promise<{ experienceId: string }> }) {
   const { experienceId } = await params;
@@ -59,13 +61,8 @@ export default async function ExperiencePage({ params }: { params: Promise<{ exp
         <p style={{ color: '#00E0FF' }}>Dev bypass active — membership check skipped.</p>
       )}
       <h3>Sessions</h3>
-      <ul>
-        {(json.items ?? []).map((s: any) => (
-          <li key={s.id}>
-            <a href={`/experience/${experienceId}/session/${s.id}`}>{s.game?.name ?? 'Session'} — {s.status}</a>
-          </li>
-        ))}
-      </ul>
+      <SessionPresenceList experienceId={experienceId} sessions={(json.items ?? [])} />
+      <RecentWinners accountId={experienceId} />
       <div style={{ marginTop: 12 }}>
         <a href={`/experience/${experienceId}/wallet`} style={{ color: '#7C3AED' }}>Open Wallet</a>
       </div>

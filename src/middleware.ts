@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isBypass } from './lib/auth';
 
 export async function middleware(req: NextRequest) {
   // Dev bypass: skip auth entirely when enabled
-  const bypass = process.env.WHOP_BYPASS_AUTH === 'true';
+  const bypass = isBypass;
   const url = new URL(req.url);
   const path = url.pathname;
 
-  // Only gate Experience and Dashboard paths
-  const shouldGate = path.startsWith('/experience/') || path.startsWith('/dashboard/');
-  if (!shouldGate) return NextResponse.next();
+  const PUBLIC_PATHS = ['/api/iap/webhook', '/api/health', '/api/rls/verify', '/_next', '/favicon.ico', '/robots.txt'];
+  if (PUBLIC_PATHS.some(p => path.startsWith(p))) return NextResponse.next();
 
   if (bypass) {
     const res = NextResponse.next();

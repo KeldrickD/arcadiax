@@ -1,6 +1,8 @@
 import { headers, cookies } from 'next/headers';
 import { isMember } from '@/lib/whop';
-import { CreateGameForm, ScheduleSessionForm, StartTriviaRoundForm } from '@/components/CreatorForms';
+import { CreateGameForm, ScheduleSessionForm, StartTriviaRoundForm, QueueRoundForm } from '@/components/CreatorForms';
+import { ExportsPanel } from '@/components/ExportsPanel';
+import { AnalyticsCards } from '@/components/AnalyticsCards';
 
 export default async function DashboardPage({ params }: { params: Promise<{ companyId: string }> }) {
   const { companyId } = await params;
@@ -39,6 +41,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ comp
       {devBypass && (
         <p style={{ color: '#00E0FF' }}>Dev bypass active — membership check skipped.</p>
       )}
+      <AnalyticsCards accountId={companyId} />
+      <ExportsPanel accountId={companyId} />
       <div style={{ display: 'grid', gap: 16 }}>
         <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
           <h3>Create Game</h3>
@@ -60,6 +64,10 @@ export default async function DashboardPage({ params }: { params: Promise<{ comp
             <RoundStarter companyId={companyId} />
           </div>
         )}
+        <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
+          <h3>Queue Round</h3>
+          <RoundQueueStarter companyId={companyId} />
+        </div>
       </div>
     </div>
   );
@@ -72,4 +80,12 @@ async function RoundStarter({ companyId }: { companyId: string }) {
   const firstSessionId = (j.items?.[0]?.id) as string | undefined;
   if (!firstSessionId) return <div>No sessions found yet. Schedule a session first.</div>;
   return <StartTriviaRoundForm sessionId={firstSessionId} />;
+}
+
+async function RoundQueueStarter({ companyId }: { companyId: string }) {
+  const res = await fetch(`${(headers().get('x-forwarded-proto') ?? 'http')}://${headers().get('host')}/api/sessions?accountId=${companyId}`, { cache: 'no-store' });
+  const j = await res.json();
+  const firstSessionId = (j.items?.[0]?.id) as string | undefined;
+  if (!firstSessionId) return <div>No sessions found yet. Schedule a session first.</div>;
+  return <QueueRoundForm sessionId={firstSessionId} />;
 }
