@@ -24,12 +24,14 @@ export async function GET(request: Request) {
   const sessionIds = (sessions ?? []).map(s => s.id);
   const counts: Record<string, number> = {};
   if (sessionIds.length) {
-    const { data: agg } = await supabase
+    const { data: rows } = await supabase
       .from('entries')
-      .select('session_id, count:id')
-      .in('session_id', sessionIds)
-      .group('session_id');
-    for (const a of agg ?? []) counts[(a as any).session_id] = Number((a as any).count ?? 0);
+      .select('session_id')
+      .in('session_id', sessionIds);
+    for (const r of rows ?? []) {
+      const sid = (r as any).session_id as string;
+      counts[sid] = (counts[sid] ?? 0) + 1;
+    }
   }
 
   const rows = [['session_id','game_name','game_type','status','scheduled_at','created_at','entry_cost','joined']];
