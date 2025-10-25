@@ -3,7 +3,7 @@ export async function GET() {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
   const authorizeBaseRaw = process.env.NEXT_PUBLIC_WHOP_OAUTH_AUTHORIZE_URL ?? 'https://whop.com/oauth/authorize';
   const authorizeBase = authorizeBaseRaw.replace(/\/+$/, '');
-  const scope = process.env.NEXT_PUBLIC_WHOP_OAUTH_SCOPE ?? 'read:memberships';
+  const scope = process.env.NEXT_PUBLIC_WHOP_OAUTH_SCOPE ?? 'read_user read:memberships';
   const audience = process.env.NEXT_PUBLIC_WHOP_OAUTH_AUDIENCE;
 
   const authorize = new URL(authorizeBase);
