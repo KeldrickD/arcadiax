@@ -57,7 +57,7 @@ function GamesCarousel() {
     { title: 'Trivia', desc: 'Fast rounds. Instant winners.', color: '#7C3AED', image: '/trivia-card-image.png' },
     { title: 'Prediction', desc: 'Closest forecast wins.', color: '#00E0FF', image: '/prediction-card-image.png' },
     { title: 'Raffle', desc: 'Lucky draws, daily.', color: '#22D3EE', image: '/raffle-card-image.png', imagePosition: 'center 15%' },
-    { title: 'Spin', desc: 'Wheel of rewards.', color: '#F472B6' },
+    { title: 'Spin', desc: 'Wheel of rewards.', color: '#F472B6', image: '/spin-card-image.png' },
   ];
   return (
     <section style={{ padding: '24px 0' }}>
