@@ -43,7 +43,7 @@ export default function SessionPage({ params }: Props) {
     if (!showConfetti) return;
     (async () => {
       try {
-        const mod: any = await import('https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.0/dist/confetti.module.mjs');
+        const mod: any = await import('canvas-confetti');
         const confetti = mod.default || mod;
         const colors = ['#7C3AED','#00E0FF','#FFD95A'];
         confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 }, colors });
