@@ -1,5 +1,6 @@
 import BottomInstallBar from '@/components/BottomInstallBar';
 import Image from 'next/image';
+import CountUp from '@/components/CountUp';
 
 const INSTALL_URL = 'https://whop.com/apps/app_tdIWpN1FBD3t8e/install/';
 
@@ -47,6 +48,9 @@ function Hero() {
             padding: '12px 16px', borderRadius: 12, fontWeight: 600
           }}>How it works</a>
         </div>
+        <div style={{ marginTop: 10, fontSize: 14, color: 'rgba(255,255,255,0.7)' }}>
+          Join 500+ creators already running daily ArcadiaX sessions.
+        </div>
       </div>
     </section>
   );
@@ -90,9 +94,9 @@ function StatsSection() {
         <div style={{ borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }} className="ax-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Avg. Session Retention</span>
-            <span className="ax-badge" aria-label="Live Data badge">Live Data</span>
+            <span className="ax-badge" aria-label="Live Data badge"><span className="ax-live-dot" aria-hidden /> <span>Live</span></span>
           </div>
-          <div style={{ fontSize: 28, fontWeight: 700 }}>+34%</div>
+          <div style={{ fontSize: 28, fontWeight: 700 }}><CountUp value={34} prefix="+" suffix="%" /></div>
           <div style={{ position: 'relative', height: 90, marginTop: 12, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
             <Image src="/session-retention-card.png" alt="Session retention visualization" fill sizes="260px" style={{ objectFit: 'cover', objectPosition: 'center 75%' }} />
           </div>
@@ -100,9 +104,9 @@ function StatsSection() {
         <div style={{ borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }} className="ax-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Players This Week</span>
-            <span className="ax-badge" aria-label="Live Data badge">Live Data</span>
+            <span className="ax-badge" aria-label="Live Data badge"><span className="ax-live-dot" aria-hidden /> <span>Live</span></span>
           </div>
-          <div style={{ fontSize: 28, fontWeight: 700 }}>2,481</div>
+          <div style={{ fontSize: 28, fontWeight: 700 }}><CountUp value={2481} /></div>
           <div style={{ position: 'relative', height: 90, marginTop: 12, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
             <Image src="/active-player-card.png" alt="Active players visualization" fill sizes="260px" style={{ objectFit: 'cover', objectPosition: 'center 30%' }} />
           </div>
@@ -110,9 +114,9 @@ function StatsSection() {
         <div style={{ borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }} className="ax-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Games Run</span>
-            <span className="ax-badge" aria-label="Live Data badge">Live Data</span>
+            <span className="ax-badge" aria-label="Live Data badge"><span className="ax-live-dot" aria-hidden /> <span>Live</span></span>
           </div>
-          <div style={{ fontSize: 28, fontWeight: 700 }}>12,930</div>
+          <div style={{ fontSize: 28, fontWeight: 700 }}><CountUp value={12930} /></div>
           <div style={{ position: 'relative', height: 90, marginTop: 12, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
             <Image src="/games-run-card.png" alt="Games run visualization" fill sizes="260px" style={{ objectFit: 'cover', objectPosition: 'center 20%' }} />
           </div>
