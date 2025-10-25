@@ -93,7 +93,9 @@ function StatsSection() {
             <span className="ax-badge" aria-label="Live Data badge">Live Data</span>
           </div>
           <div style={{ fontSize: 28, fontWeight: 700 }}>+34%</div>
-          <div style={{ height: 90, marginTop: 12, borderRadius: 10, background: 'linear-gradient(180deg,rgba(124,58,237,0.25),transparent)', border: '1px solid rgba(255,255,255,0.08)' }} />
+          <div style={{ position: 'relative', height: 90, marginTop: 12, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <Image src="/session-retention-card.png" alt="Session retention visualization" fill sizes="260px" style={{ objectFit: 'cover', objectPosition: 'center 60%' }} />
+          </div>
         </div>
         <div style={{ borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }} className="ax-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
