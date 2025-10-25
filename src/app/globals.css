@@ -3,6 +3,13 @@ html {
 	scroll-behavior: smooth;
 }
 
+/* Global dark theme background to avoid white bleed behind sections */
+html, body {
+	background: #0A0A0F;
+	color: #fff;
+	min-height: 100%;
+}
+
 /* Gradient section dividers */
 .ax-divider {
 	border-top: 1px solid transparent;

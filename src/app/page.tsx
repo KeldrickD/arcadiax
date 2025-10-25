@@ -1,4 +1,5 @@
 import BottomInstallBar from '@/components/BottomInstallBar';
+import Image from 'next/image';
 
 const INSTALL_URL = 'https://whop.com/apps/app_tdIWpN1FBD3t8e/install/';
 
@@ -53,7 +54,7 @@ function Hero() {
 
 function GamesCarousel() {
   const items = [
-    { title: 'Trivia', desc: 'Fast rounds. Instant winners.', color: '#7C3AED' },
+    { title: 'Trivia', desc: 'Fast rounds. Instant winners.', color: '#7C3AED', image: '/trivia-card-image.png' },
     { title: 'Prediction', desc: 'Closest forecast wins.', color: '#00E0FF' },
     { title: 'Raffle', desc: 'Lucky draws, daily.', color: '#22D3EE' },
     { title: 'Spin', desc: 'Wheel of rewards.', color: '#F472B6' },
@@ -65,7 +66,13 @@ function GamesCarousel() {
         <div style={{ display: 'flex', gap: 16, overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: 8 }}>
           {items.map((it, i) => (
             <div key={i} style={{ minWidth: 260, scrollSnapAlign: 'start', borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }} className="ax-card">
-              <div style={{ height: 120, borderRadius: 12, background: it.color, opacity: 0.6, marginBottom: 12 }} />
+              {it.image ? (
+                <div style={{ position: 'relative', height: 120, borderRadius: 12, overflow: 'hidden', marginBottom: 12 }}>
+                  <Image src={it.image} alt={`${it.title} game card`} fill sizes="260px" style={{ objectFit: 'cover' }} />
+                </div>
+              ) : (
+                <div style={{ height: 120, borderRadius: 12, background: it.color, opacity: 0.6, marginBottom: 12 }} />
+              )}
               <div style={{ fontWeight: 600 }}>{it.title}</div>
               <div style={{ color: 'rgba(255,255,255,0.75)' }}>{it.desc}</div>
             </div>
