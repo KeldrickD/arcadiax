@@ -5,6 +5,9 @@
     },
     "Sentry": {
       "url": "https://mcp.sentry.dev/mcp/keldrick/javascript-nextjs"
+    },
+    "whop": {
+      "url": "https://docs.whop.com/llms-full.txt"
     }
   }
 }
