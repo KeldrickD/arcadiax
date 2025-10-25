@@ -55,7 +55,7 @@ function Hero() {
 function GamesCarousel() {
   const items = [
     { title: 'Trivia', desc: 'Fast rounds. Instant winners.', color: '#7C3AED', image: '/trivia-card-image.png' },
-    { title: 'Prediction', desc: 'Closest forecast wins.', color: '#00E0FF' },
+    { title: 'Prediction', desc: 'Closest forecast wins.', color: '#00E0FF', image: '/prediction-card-image.png' },
     { title: 'Raffle', desc: 'Lucky draws, daily.', color: '#22D3EE' },
     { title: 'Spin', desc: 'Wheel of rewards.', color: '#F472B6' },
   ];
