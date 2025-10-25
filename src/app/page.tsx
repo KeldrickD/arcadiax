@@ -104,7 +104,7 @@ function StatsSection() {
           </div>
           <div style={{ fontSize: 28, fontWeight: 700 }}>2,481</div>
           <div style={{ position: 'relative', height: 90, marginTop: 12, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <Image src="/active-player-card.png" alt="Active players visualization" fill sizes="260px" style={{ objectFit: 'cover', objectPosition: 'center 25%' }} />
+            <Image src="/active-player-card.png" alt="Active players visualization" fill sizes="260px" style={{ objectFit: 'cover', objectPosition: 'center 20' }} />
           </div>
         </div>
         <div style={{ borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }} className="ax-card">
@@ -114,7 +114,7 @@ function StatsSection() {
           </div>
           <div style={{ fontSize: 28, fontWeight: 700 }}>12,930</div>
           <div style={{ position: 'relative', height: 90, marginTop: 12, borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <Image src="/games-run-card.png" alt="Games run visualization" fill sizes="260px" style={{ objectFit: 'cover', objectPosition: 'center 30%' }} />
+            <Image src="/games-run-card.png" alt="Games run visualization" fill sizes="260px" style={{ objectFit: 'cover', objectPosition: 'center 20%' }} />
           </div>
         </div>
       </div>
