@@ -4,6 +4,16 @@ import { CreateGameForm, ScheduleSessionForm, StartTriviaRoundForm, QueueRoundFo
 import { ExportsPanel } from '@/components/ExportsPanel';
 import { AnalyticsCards } from '@/components/AnalyticsCards';
 
+export const metadata = {
+  openGraph: {
+    images: [{ url: '/discover-image.png', width: 1200, height: 630, alt: 'ArcadiaX Dashboard' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: [{ url: '/discover-image.png', alt: 'ArcadiaX Dashboard' }],
+  },
+};
+
 export default async function DashboardPage({ params }: { params: Promise<{ companyId: string }> }) {
   const { companyId } = await params;
   const c = await cookies();
