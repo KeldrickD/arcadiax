@@ -6,11 +6,11 @@ import { RecentWinners } from '@/components/RecentWinners';
 
 export default async function ExperiencePage({ params }: { params: Promise<{ experienceId: string }> }) {
   const { experienceId } = await params;
-  const h = headers();
+  const h = await headers();
   const host = h.get('x-forwarded-host') ?? h.get('host');
   const proto = h.get('x-forwarded-proto') ?? 'http';
   const base = host ? `${proto}://${host}` : '';
-  const c = cookies();
+  const c = await cookies();
   const access = c.get('whop_access_token')?.value ?? '';
   const devBypass = process.env.WHOP_BYPASS_AUTH === 'true';
 
