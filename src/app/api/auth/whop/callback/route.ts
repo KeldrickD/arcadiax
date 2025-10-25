@@ -4,7 +4,8 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
-  const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000'}/api/auth/whop/callback`;
+  const reqOrigin = new URL(request.url).origin;
+  const redirectUri = `${reqOrigin}/api/auth/whop/callback`;
 
   if (!code) {
     return new Response('Missing code', { status: 400 });
