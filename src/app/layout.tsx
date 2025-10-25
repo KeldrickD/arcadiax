@@ -1,5 +1,6 @@
 import CookieNotice from '@/components/CookieNotice';
 import { Analytics } from '@vercel/analytics/react';
+import './globals.css';
 export const metadata = {
   title: 'ArcadiaX',
   metadataBase: new URL('https://arcadiax.games'),
@@ -7,13 +8,13 @@ export const metadata = {
     title: 'ArcadiaX — Mini Games. Major Retention.',
     description: 'Launch trivia, prediction, and raffle sessions in minutes. Built for Whop creators.',
     url: 'https://arcadiax.games',
-    images: ['/og'],
+    images: [{ url: '/og', width: 1200, height: 630, alt: 'ArcadiaX — Mini Games. Major Retention.' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'ArcadiaX — Mini Games. Major Retention.',
     description: 'Launch trivia, prediction, and raffle sessions in minutes. Built for Whop creators.',
-    images: ['/og'],
+    images: [{ url: '/og', alt: 'ArcadiaX — Mini Games. Major Retention.' }],
   },
 };
 

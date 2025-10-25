@@ -33,7 +33,7 @@ export default function BottomInstallBar() {
       backdropFilter: 'blur(10px)',
       background: 'rgba(10,10,15,0.7)',
       borderTop: '1px solid rgba(255,255,255,0.08)'
-    }} className="md:hidden">
+    }} className="md:hidden ax-fade-up">
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', maxWidth: 640 }}>
         <button onClick={() => { setHidden(true); try { localStorage.setItem('ax_install_bar_hidden','1'); } catch {} }} aria-label="Dismiss" style={{
           appearance: 'none', border: 'none', background: 'transparent', color: '#aaa', fontSize: 18
@@ -44,7 +44,7 @@ export default function BottomInstallBar() {
           border: '1px solid rgba(255,255,255,0.1)',
           background: 'rgba(255,255,255,0.06)',
           borderRadius: 12, padding: '12px 14px'
-        }}>
+        }} className="ax-card">
           <div>
             <div style={{ fontWeight: 600 }}>Install ArcadiaX on Whop</div>
             <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Spin up community games in minutes</div>

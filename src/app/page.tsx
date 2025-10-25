@@ -6,9 +6,13 @@ export default function Home() {
   return (
     <main style={{ minHeight: '100svh', background: '#0A0A0F', color: '#fff' }}>
       <Hero />
+      <div className="ax-divider" />
       <GamesCarousel />
+      <div className="ax-divider" />
       <StatsSection />
+      <div className="ax-divider" />
       <HowItWorks />
+      <div className="ax-divider" />
       <CTA />
       <BottomInstallBar />
     </main>
@@ -17,17 +21,16 @@ export default function Home() {
 
 function Hero() {
   return (
-    <section style={{ position: 'relative', padding: '80px 24px 40px' }}>
-      <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: -1 }}>
-        <div style={{ position: 'absolute', top: -200, left: -200, height: 400, width: 400, borderRadius: '50%', filter: 'blur(80px)', background: 'rgba(124,58,237,0.18)' }} />
-        <div style={{ position: 'absolute', bottom: -200, right: -200, height: 400, width: 400, borderRadius: '50%', filter: 'blur(80px)', background: 'rgba(0,224,255,0.18)' }} />
-      </div>
+    <section style={{ position: 'relative', padding: '80px 24px 40px' }} className="hero-animated">
       <div style={{ margin: '0 auto', maxWidth: 1100, textAlign: 'center' }}>
         <h1 style={{ fontSize: 44, lineHeight: 1.1, fontWeight: 700, letterSpacing: '-0.02em' }}>
           Mini Games. Major Retention.
         </h1>
         <p style={{ marginTop: 12, fontSize: 18, color: 'rgba(255,255,255,0.7)' }}>
           Launch trivia, prediction, and raffle sessions in minutes. Built for Whop creators.
+        </p>
+        <p style={{ marginTop: 8, fontSize: 16, color: 'rgba(255,255,255,0.75)' }}>
+          Built for creators who want to make their communities play again.
         </p>
         <div style={{ marginTop: 20, display: 'flex', gap: 12, justifyContent: 'center' }}>
           <a href={INSTALL_URL} target="_blank" rel="noreferrer" style={{
@@ -61,7 +64,7 @@ function GamesCarousel() {
         <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 12 }}>Games</h2>
         <div style={{ display: 'flex', gap: 16, overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: 8 }}>
           {items.map((it, i) => (
-            <div key={i} style={{ minWidth: 260, scrollSnapAlign: 'start', borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }}>
+            <div key={i} style={{ minWidth: 260, scrollSnapAlign: 'start', borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }} className="ax-card">
               <div style={{ height: 120, borderRadius: 12, background: it.color, opacity: 0.6, marginBottom: 12 }} />
               <div style={{ fontWeight: 600 }}>{it.title}</div>
               <div style={{ color: 'rgba(255,255,255,0.75)' }}>{it.desc}</div>
@@ -77,18 +80,27 @@ function StatsSection() {
   return (
     <section style={{ padding: '24px 0' }}>
       <div style={{ margin: '0 auto', maxWidth: 1100, padding: '0 24px', display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))' }}>
-        <div style={{ borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }}>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Avg. Session Retention</div>
+        <div style={{ borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }} className="ax-card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Avg. Session Retention</span>
+            <span className="ax-badge" aria-label="Live Data badge">Live Data</span>
+          </div>
           <div style={{ fontSize: 28, fontWeight: 700 }}>+34%</div>
           <div style={{ height: 90, marginTop: 12, borderRadius: 10, background: 'linear-gradient(180deg,rgba(124,58,237,0.25),transparent)', border: '1px solid rgba(255,255,255,0.08)' }} />
         </div>
-        <div style={{ borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }}>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Players This Week</div>
+        <div style={{ borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }} className="ax-card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Players This Week</span>
+            <span className="ax-badge" aria-label="Live Data badge">Live Data</span>
+          </div>
           <div style={{ fontSize: 28, fontWeight: 700 }}>2,481</div>
           <div style={{ height: 90, marginTop: 12, borderRadius: 10, background: 'linear-gradient(180deg,rgba(0,224,255,0.25),transparent)', border: '1px solid rgba(255,255,255,0.08)' }} />
         </div>
-        <div style={{ borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }}>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Games Run</div>
+        <div style={{ borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }} className="ax-card">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Games Run</span>
+            <span className="ax-badge" aria-label="Live Data badge">Live Data</span>
+          </div>
           <div style={{ fontSize: 28, fontWeight: 700 }}>12,930</div>
           <div style={{ height: 90, marginTop: 12, borderRadius: 10, background: 'linear-gradient(180deg,rgba(34,211,238,0.25),transparent)', border: '1px solid rgba(255,255,255,0.08)' }} />
         </div>
@@ -109,7 +121,7 @@ function HowItWorks() {
         <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 12 }}>How it Works</h2>
         <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))' }}>
           {steps.map((s, i) => (
-            <div key={i} style={{ borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }}>
+            <div key={i} style={{ borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }} className="ax-card">
               <div style={{ fontWeight: 600 }}>{i + 1}. {s.title}</div>
               <div style={{ color: 'rgba(255,255,255,0.75)' }}>{s.desc}</div>
             </div>
@@ -124,7 +136,7 @@ function CTA() {
   return (
     <section style={{ padding: '24px 0 80px' }}>
       <div style={{ margin: '0 auto', maxWidth: 900, padding: '0 24px', textAlign: 'center' }}>
-        <div style={{ borderRadius: 16, padding: 24, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }}>
+        <div style={{ borderRadius: 16, padding: 24, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }} className="ax-card">
           <h3 style={{ fontSize: 22, fontWeight: 700 }}>Ready to play?</h3>
           <p style={{ color: 'rgba(255,255,255,0.75)' }}>Install ArcadiaX on Whop and host your first session today.</p>
           <div style={{ marginTop: 14 }}>
