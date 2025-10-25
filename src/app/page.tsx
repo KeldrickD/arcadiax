@@ -56,7 +56,7 @@ function GamesCarousel() {
   const items = [
     { title: 'Trivia', desc: 'Fast rounds. Instant winners.', color: '#7C3AED', image: '/trivia-card-image.png' },
     { title: 'Prediction', desc: 'Closest forecast wins.', color: '#00E0FF', image: '/prediction-card-image.png' },
-    { title: 'Raffle', desc: 'Lucky draws, daily.', color: '#22D3EE', image: '/raffle-card-image.png' },
+    { title: 'Raffle', desc: 'Lucky draws, daily.', color: '#22D3EE', image: '/raffle-card-image.png', imagePosition: 'center 65%' },
     { title: 'Spin', desc: 'Wheel of rewards.', color: '#F472B6' },
   ];
   return (
@@ -68,7 +68,7 @@ function GamesCarousel() {
             <div key={i} style={{ minWidth: 260, scrollSnapAlign: 'start', borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)' }} className="ax-card">
               {it.image ? (
                 <div style={{ position: 'relative', height: 120, borderRadius: 12, overflow: 'hidden', marginBottom: 12 }}>
-                  <Image src={it.image} alt={`${it.title} game card`} fill sizes="260px" style={{ objectFit: 'cover' }} />
+                  <Image src={it.image} alt={`${it.title} game card`} fill sizes="260px" style={{ objectFit: 'cover', objectPosition: (it as any).imagePosition ?? 'center' }} />
                 </div>
               ) : (
                 <div style={{ height: 120, borderRadius: 12, background: it.color, opacity: 0.6, marginBottom: 12 }} />
