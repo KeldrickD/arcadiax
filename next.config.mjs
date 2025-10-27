@@ -24,6 +24,33 @@ const baseNextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },
+  async redirects() {
+    return [
+      // 301 host redirect: arcadiax.games -> whopgames.com
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'arcadiax.games',
+          },
+        ],
+        destination: 'https://whopgames.com/:path*',
+        permanent: true,
+      },
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'www.arcadiax.games',
+          },
+        ],
+        destination: 'https://whopgames.com/:path*',
+        permanent: true,
+      },
+    ];
+  },
   turbopack: {
     root: process.cwd(),
   },
