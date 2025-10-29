@@ -17,7 +17,11 @@ export const metadata = {
 export default async function DashboardPage({ params }: { params: Promise<{ companyId: string }> }) {
   const { companyId } = await params;
   const c = await cookies();
-  const access = c.get('whop_access_token')?.value ?? '';
+  let access = c.get('whop_access_token')?.value ?? '';
+  if (!access) {
+    const hAuth = (await headers()).get('authorization') || (await headers()).get('Authorization');
+    if (hAuth && hAuth.toLowerCase().startsWith('bearer ')) access = hAuth.slice(7).trim();
+  }
   const devBypass = process.env.WHOP_BYPASS_AUTH === 'true';
   if (!devBypass) {
     if (!access) {
@@ -28,7 +32,24 @@ export default async function DashboardPage({ params }: { params: Promise<{ comp
         </div>
       );
     }
-    const check = await isMember(access, companyId).catch(() => ({ ok: false, isMember: false }));
+    // Resolve Whop company id if route param is account UUID
+    let membershipCompanyId = companyId;
+    try {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+      if (url && serviceKey) {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
+        const { data } = await supabase
+          .from('accounts')
+          .select('whop_company_id')
+          .eq('id', companyId)
+          .maybeSingle();
+        if (data?.whop_company_id) membershipCompanyId = data.whop_company_id as string;
+      }
+    } catch {}
+
+    const check = await isMember(access, membershipCompanyId).catch(() => ({ ok: false, isMember: false }));
     if (!check.ok || !check.isMember) {
       return (
         <div style={{ padding: 24 }}>

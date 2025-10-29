@@ -11,7 +11,12 @@ export default async function ExperiencePage({ params }: { params: Promise<{ exp
   const proto = h.get('x-forwarded-proto') ?? 'http';
   const base = host ? `${proto}://${host}` : '';
   const c = await cookies();
-  const access = c.get('whop_access_token')?.value ?? '';
+  let access = c.get('whop_access_token')?.value ?? '';
+  if (!access) {
+    const hh = await headers();
+    const authz = hh.get('authorization') || hh.get('Authorization');
+    if (authz && authz.toLowerCase().startsWith('bearer ')) access = authz.slice(7).trim();
+  }
   const devBypass = process.env.WHOP_BYPASS_AUTH === 'true';
 
   // Resolve Whop company id from our account UUID

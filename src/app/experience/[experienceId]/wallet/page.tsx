@@ -56,7 +56,8 @@ export default function WalletPage({ params }: { params: { experienceId: string 
             const r = await fetch('/api/iap/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ memberId, credits, amountUsd }) });
             const j = await r.json();
             if (!r.ok || !j.ok) throw new Error(j.error || 'Checkout failed');
-            window.open(j.checkoutUrl, '_blank');
+            const w = window.open(j.checkoutUrl, '_blank');
+            if (!w) { window.location.href = j.checkoutUrl; }
             setToast('Opening checkout...'); setTimeout(()=>setToast(null), 1500);
             if (pollId) clearInterval(pollId);
             const startBal = balance;
