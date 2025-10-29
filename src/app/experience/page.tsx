@@ -1,8 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import { redirect } from 'next/navigation';
+import { createClient } from '@supabase/supabase-js';
 
-export default function ExperiencePage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function ExperiencePage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
   const candidateKeys = [
     'experienceId', 'experience_id',
     'companyId', 'company_id',
@@ -16,6 +17,21 @@ export default function ExperiencePage({ searchParams }: { searchParams?: Record
       return redirect(`/experience/${encodeURIComponent(value)}`);
     }
   }
+
+  // Fallbacks for review/testing: demo env var or first account in DB
+  const demoId = process.env.NEXT_PUBLIC_DEMO_EXPERIENCE_ID || process.env.DEMO_EXPERIENCE_ID;
+  if (demoId) return redirect(`/experience/${encodeURIComponent(demoId)}`);
+
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+    if (url && serviceKey) {
+      const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
+      const { data } = await supabase.from('accounts').select('id').limit(1);
+      const first = data?.[0]?.id as string | undefined;
+      if (first) return redirect(`/experience/${encodeURIComponent(first)}`);
+    }
+  } catch {}
 
   return (
     <main className="min-h-screen" style={{ padding: '40px 24px' }}>
