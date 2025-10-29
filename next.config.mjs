@@ -11,7 +11,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' vercel.live",
       "style-src 'self' 'unsafe-inline' fonts.gstatic.com fonts.googleapis.com",
       "img-src 'self' data: blob:",
-      "connect-src 'self' https://*.supabase.co https://api.whop.com",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.whop.com",
       "font-src 'self' fonts.gstatic.com",
       "frame-ancestors 'self' https://whop.com https://*.whop.com"
     ].join('; ') }
