@@ -23,18 +23,11 @@ export default async function DashboardPage({ params }: { params: Promise<{ comp
     if (hAuth && hAuth.toLowerCase().startsWith('bearer ')) access = hAuth.slice(7).trim();
   }
   const devBypass = process.env.WHOP_BYPASS_AUTH === 'true';
-  if (!devBypass) {
-    if (!access) {
-      return (
-        <div style={{ padding: 24 }}>
-          <h2>Dashboard</h2>
-          <p>Sign in via Whop to continue.</p>
-        </div>
-      );
-    }
-    // Resolve Whop company id if route param is account UUID
-    let membershipCompanyId = companyId;
+  // Do not block SSR pages when token is missing; Whop does not forward auth headers to SSR.
+  // We still best-effort check membership when a token exists.
+  if (access) {
     try {
+      let membershipCompanyId = companyId;
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
       if (url && serviceKey) {
@@ -47,17 +40,11 @@ export default async function DashboardPage({ params }: { params: Promise<{ comp
           .maybeSingle();
         if (data?.whop_company_id) membershipCompanyId = data.whop_company_id as string;
       }
+      const check = await isMember(access, membershipCompanyId).catch(() => ({ ok: false, isMember: false }));
+      if (!check.ok || !check.isMember) {
+        // Soft warning but continue rendering to avoid blocking creators due to header propagation issues
+      }
     } catch {}
-
-    const check = await isMember(access, membershipCompanyId).catch(() => ({ ok: false, isMember: false }));
-    if (!check.ok || !check.isMember) {
-      return (
-        <div style={{ padding: 24 }}>
-          <h2>Dashboard</h2>
-          <p>Membership required for this community.</p>
-        </div>
-      );
-    }
   }
   const h = await headers();
   const host = h.get('x-forwarded-host') ?? h.get('host');

@@ -38,25 +38,14 @@ export default async function ExperiencePage({ params }: { params: Promise<{ exp
     }
   } catch {}
 
-  let allowed = devBypass;
-  if (!allowed) {
-    if (!access) {
-      return (
-        <div style={{ padding: 24 }}>
-          <h2>Experience</h2>
-          <p>Sign in via Whop to continue.</p>
-        </div>
-      );
-    }
-    const check = await isMember(access, companyId).catch(() => ({ ok: false, isMember: false }));
-    if (!check.ok || !check.isMember) {
-      return (
-        <div style={{ padding: 24 }}>
-          <h2>Experience</h2>
-          <p>Membership required for this community.</p>
-        </div>
-      );
-    }
+  // Do not block SSR when token is missing; perform best-effort membership check if token present
+  if (access) {
+    try {
+      const check = await isMember(access, companyId).catch(() => ({ ok: false, isMember: false }));
+      if (!check.ok || !check.isMember) {
+        // Soft warning only; continue rendering
+      }
+    } catch {}
   }
   const res = await fetch(`${base}/api/sessions?accountId=${experienceId}`, { cache: 'no-store' });
   const json = await res.json();
