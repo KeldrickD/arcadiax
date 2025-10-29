@@ -46,12 +46,15 @@ export default async function DashboardPage({ params }: { params: Promise<{ comp
       }
     } catch {}
   }
-  const h = await headers();
-  const host = h.get('x-forwarded-host') ?? h.get('host');
-  const proto = h.get('x-forwarded-proto') ?? 'http';
-  const base = host ? `${proto}://${host}` : '';
-  const res = await fetch(`${base}/api/games?accountId=${companyId}`, { cache: 'no-store' });
-  const json = await res.json();
+  let json: any = { items: [] };
+  try {
+    const h = await headers();
+    const host = h.get('x-forwarded-host') ?? h.get('host');
+    const proto = h.get('x-forwarded-proto') ?? 'http';
+    const base = host ? `${proto}://${host}` : '';
+    const res = await fetch(`${base}/api/games?accountId=${companyId}`, { cache: 'no-store' });
+    json = await res.json().catch(() => ({ items: [] }));
+  } catch {}
   return (
     <div style={{ padding: 24 }}>
       <h2>Dashboard</h2>
