@@ -22,7 +22,7 @@ export default async function CatchAll() {
             .eq('whop_company_id', whopCompanyId)
             .maybeSingle();
           const accountUuid = data?.id as string | undefined;
-          if (accountUuid) return redirect(`/dashboard/${accountUuid}`);
+          if (accountUuid) return redirect(`/dashboard/${accountUuid}/sessions`);
         }
       }
     }
@@ -30,7 +30,7 @@ export default async function CatchAll() {
 
   // Fallback to experience list for the first available account
   const demo = process.env.NEXT_PUBLIC_DEMO_EXPERIENCE_ID || process.env.DEMO_EXPERIENCE_ID;
-  if (demo) return redirect(`/experience/${encodeURIComponent(demo)}`);
+  if (demo) return redirect(`/dashboard/${encodeURIComponent(demo)}/sessions`);
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
@@ -39,7 +39,7 @@ export default async function CatchAll() {
       const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
       const { data } = await supabase.from('accounts').select('id').limit(1);
       const first = data?.[0]?.id as string | undefined;
-      if (first) return redirect(`/experience/${first}`);
+      if (first) return redirect(`/dashboard/${first}/sessions`);
     }
   } catch {}
   redirect('/experience');

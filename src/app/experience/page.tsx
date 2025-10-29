@@ -14,13 +14,13 @@ export default async function ExperiencePage({ searchParams }: { searchParams?: 
     const raw = searchParams?.[key];
     const value = Array.isArray(raw) ? raw[0] : raw;
     if (value) {
-      return redirect(`/experience/${encodeURIComponent(value)}`);
+      return redirect(`/dashboard/${encodeURIComponent(value)}/sessions`);
     }
   }
 
   // Fallbacks for review/testing: demo env var or first account in DB
   const demoId = process.env.NEXT_PUBLIC_DEMO_EXPERIENCE_ID || process.env.DEMO_EXPERIENCE_ID;
-  if (demoId) return redirect(`/experience/${encodeURIComponent(demoId)}`);
+  if (demoId) return redirect(`/dashboard/${encodeURIComponent(demoId)}/sessions`);
 
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -29,7 +29,7 @@ export default async function ExperiencePage({ searchParams }: { searchParams?: 
       const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
       const { data } = await supabase.from('accounts').select('id').limit(1);
       const first = data?.[0]?.id as string | undefined;
-      if (first) return redirect(`/experience/${encodeURIComponent(first)}`);
+      if (first) return redirect(`/dashboard/${encodeURIComponent(first)}/sessions`);
     }
   } catch {}
 
