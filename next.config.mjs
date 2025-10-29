@@ -4,7 +4,6 @@ import createMDX from '@next/mdx';
 const securityHeaders = [
   { key:'Strict-Transport-Security', value:'max-age=31536000; includeSubDomains; preload' },
   { key:'X-Content-Type-Options', value:'nosniff' },
-  { key:'X-Frame-Options', value:'DENY' },
   { key:'Referrer-Policy', value:'strict-origin-when-cross-origin' },
   { key:'Permissions-Policy', value:'geolocation=(), microphone=(), camera=()' },
   { key:'Content-Security-Policy', value:[
@@ -14,7 +13,7 @@ const securityHeaders = [
       "img-src 'self' data: blob:",
       "connect-src 'self' https://*.supabase.co https://api.whop.com",
       "font-src 'self' fonts.gstatic.com",
-      "frame-ancestors 'none'"
+      "frame-ancestors 'self' https://whop.com https://*.whop.com"
     ].join('; ') }
 ];
 
