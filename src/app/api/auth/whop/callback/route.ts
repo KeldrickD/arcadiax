@@ -4,7 +4,10 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
-  const popup = searchParams.get('popup');
+  const popupParam = searchParams.get('popup');
+  const state = searchParams.get('state') || '';
+  const popupFromState = state.endsWith('.p');
+  const popup = popupParam || (popupFromState ? '1' : null);
   const reqOrigin = new URL(request.url).origin;
   const redirectUri = `${reqOrigin}/api/auth/whop/callback`;
 

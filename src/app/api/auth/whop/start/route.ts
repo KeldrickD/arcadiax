@@ -16,11 +16,12 @@ export async function GET(request: Request) {
   const authorize = new URL(authorizeBase);
   authorize.searchParams.set('client_id', appId);
   const cb = new URL(`${baseUrl}/api/auth/whop/callback`);
-  if (popup) cb.searchParams.set('popup', popup);
   authorize.searchParams.set('redirect_uri', cb.toString());
   authorize.searchParams.set('response_type', 'code');
   authorize.searchParams.set('scope', scope);
-  authorize.searchParams.set('state', Math.random().toString(36).slice(2));
+  // Encode popup intent in state to keep redirect_uri EXACTLY matching Whop settings
+  const state = `${Math.random().toString(36).slice(2)}.${popup ? 'p' : 'n'}`;
+  authorize.searchParams.set('state', state);
   if (audience) authorize.searchParams.set('audience', audience);
   // some providers require explicit prompt
   authorize.searchParams.set('prompt', 'consent');
