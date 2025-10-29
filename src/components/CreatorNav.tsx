@@ -10,6 +10,7 @@ export default function CreatorNav({ accountId }: { accountId: string }) {
     { href: `/dashboard/${accountId}/sessions`, label: 'Sessions' },
     { href: `/experience/${accountId}`, label: 'Experience' },
     { href: `/experience/${accountId}/wallet`, label: 'Wallet' },
+    { href: `/help/getting-started`, label: 'Help' },
   ];
   return (
     <nav style={{ display: 'flex', gap: 12, padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}>

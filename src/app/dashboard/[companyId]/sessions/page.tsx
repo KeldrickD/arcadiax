@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 export default function SessionsAdmin({ params }: { params: { companyId: string } }) {
   const { companyId } = params;
+  const [canManage, setCanManage] = useState<boolean>(false);
   const [sessionId, setSessionId] = useState<string>('');
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -11,6 +12,11 @@ export default function SessionsAdmin({ params }: { params: { companyId: string 
   const [table, setTable] = useState<any[]>([]);
 
   useEffect(() => { (async () => {
+    try {
+      const rRole = await fetch(`/api/auth/role?companyId=${companyId}`, { cache: 'no-store' });
+      const jRole = await rRole.json().catch(()=>({canManage:false}));
+      setCanManage(!!jRole.canManage);
+    } catch {}
     const r = await fetch(`/api/sessions?accountId=${companyId}`); const j = await r.json();
     setSessionId(j.items?.[0]?.id ?? '');
   })(); }, [companyId]);
@@ -37,6 +43,7 @@ export default function SessionsAdmin({ params }: { params: { companyId: string 
           <h3>Sessions table</h3>
           <SessionsTable companyId={companyId} />
         </section>
+        {canManage && (
         <section style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
           <h3>Active Round</h3>
           <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(data?.active ?? null, null, 2)}</pre>
@@ -45,6 +52,7 @@ export default function SessionsAdmin({ params }: { params: { companyId: string 
             <button onClick={async ()=>{ await fetch('/api/creator/rounds/queue/batch', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ sessionId, count: 5, gapSec: 30 }) }); setToast('Queued best-of-5'); setTimeout(()=>setToast(null), 1500); load(); }} style={{ padding: '6px 10px', borderRadius: 8, background: '#7C3AED', color: '#fff' }}>Start schedule (best-of-5)</button>
           </div>
         </section>
+        )}
 
         <section style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
           <h3>Queued Rounds</h3>

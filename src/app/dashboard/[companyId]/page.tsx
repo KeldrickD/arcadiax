@@ -55,6 +55,29 @@ export default async function DashboardPage({ params }: { params: Promise<{ comp
     const res = await fetch(`${base}/api/games?accountId=${companyId}`, { cache: 'no-store' });
     json = await res.json().catch(() => ({ items: [] }));
   } catch {}
+  // Determine role for server-side gating
+  let canManage = false;
+  try {
+    if (access) {
+      let membershipCompanyId = companyId;
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+      if (url && serviceKey) {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
+        const { data } = await supabase
+          .from('accounts')
+          .select('whop_company_id')
+          .eq('id', companyId)
+          .maybeSingle();
+        if (data?.whop_company_id) membershipCompanyId = data.whop_company_id as string;
+      }
+      const { getWhopRole } = await import('@/lib/whop');
+      const role = await getWhopRole(access, membershipCompanyId);
+      canManage = role === 'owner' || role === 'mod';
+    }
+  } catch {}
+
   return (
     <div style={{ padding: 24 }}>
       <h2>Dashboard</h2>
@@ -65,14 +88,25 @@ export default async function DashboardPage({ params }: { params: Promise<{ comp
       <AnalyticsCards accountId={companyId} />
       <ExportsPanel accountId={companyId} />
       <div style={{ display: 'grid', gap: 16 }}>
-        <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
-          <h3>Create Game</h3>
-          <CreateGameForm accountId={companyId} />
-        </div>
-        <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
-          <h3>Schedule Session</h3>
-          <ScheduleSessionForm games={(json.items ?? []) as any} />
-        </div>
+        {json.items?.length === 0 && (
+          <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8, background: 'rgba(124,58,237,0.08)' }}>
+            <h3 style={{ marginTop: 0 }}>Create your first game</h3>
+            <p style={{ opacity: 0.85 }}>Start by creating a game. Then you can schedule your first session.</p>
+            {canManage ? <CreateGameForm accountId={companyId} /> : <p>Ask an owner or moderator to create the first game.</p>}
+          </div>
+        )}
+        {canManage && (
+          <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
+            <h3>Create Game</h3>
+            <CreateGameForm accountId={companyId} />
+          </div>
+        )}
+        {canManage && (
+          <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
+            <h3>Schedule Session</h3>
+            <ScheduleSessionForm games={(json.items ?? []) as any} />
+          </div>
+        )}
         {((json.items ?? []) as any[])[0] && (
           <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
             <h3>Start Trivia Round (on latest session)</h3>
@@ -82,17 +116,21 @@ export default async function DashboardPage({ params }: { params: Promise<{ comp
             {/* Fallback to client flow if not available */}
             {/* Small inline fetch */}
             {/* eslint-disable-next-line react/no-unescaped-entities */}
-            <RoundStarter companyId={companyId} />
+            {canManage ? <RoundStarter companyId={companyId} /> : <div style={{ opacity: 0.8 }}>Only owners/mods can start rounds.</div>}
           </div>
         )}
-        <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
-          <h3>Queue Round</h3>
-          <RoundQueueStarter companyId={companyId} />
-        </div>
-        <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
-          <h3>Community Settings</h3>
-          <CreatorSettingsForm accountId={companyId} />
-        </div>
+        {canManage && (
+          <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
+            <h3>Queue Round</h3>
+            <RoundQueueStarter companyId={companyId} />
+          </div>
+        )}
+        {canManage && (
+          <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
+            <h3>Community Settings</h3>
+            <CreatorSettingsForm accountId={companyId} />
+          </div>
+        )}
       </div>
     </div>
   );

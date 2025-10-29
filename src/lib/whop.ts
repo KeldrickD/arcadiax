@@ -57,6 +57,23 @@ export async function isMember(accessToken: string, companyId: string): Promise<
   }
 }
 
+export type WhopRole = 'owner' | 'mod' | 'member' | 'unknown';
+
+export async function getWhopRole(accessToken: string, companyId: string): Promise<WhopRole> {
+  try {
+    const res = await fetchWhopMembership({ accessToken, companyId });
+    if (!res.ok) return 'unknown';
+    const j = await res.json();
+    const role = (j?.role ?? j?.membership?.role ?? j?.membership?.permissions?.role ?? '').toString().toLowerCase();
+    if (role.includes('owner') || role === 'admin') return 'owner';
+    if (role.includes('mod') || role.includes('manager') || role.includes('staff')) return 'mod';
+    if (role.includes('member') || role === 'user') return 'member';
+    return 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
 // Feed and push stubs (call Whop when OAuth is finalized). Safe no-ops when API key missing.
 export async function postToFeed(params: { companyId: string; title: string; body?: string; imageUrl?: string }): Promise<void> {
   const apiKey = process.env.WHOP_API_KEY;
