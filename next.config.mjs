@@ -23,6 +23,10 @@ const baseNextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },
+  env: {
+    NEXT_PUBLIC_SENTRY_RELEASE: process.env.NEXT_PUBLIC_SENTRY_RELEASE ?? process.env.VERCEL_GIT_COMMIT_SHA,
+    NEXT_PUBLIC_SENTRY_ENV: process.env.NEXT_PUBLIC_SENTRY_ENV ?? process.env.VERCEL_ENV ?? process.env.NODE_ENV,
+  },
   async redirects() {
     return [
       // 301 host redirect: arcadiax.games -> whopgames.com

@@ -7,7 +7,7 @@ export async function middleware(req: NextRequest) {
   const url = new URL(req.url);
   const path = url.pathname;
 
-  const PUBLIC_PATHS = ['/api/iap/webhook', '/api/health', '/api/rls/verify', '/_next', '/favicon.ico', '/robots.txt'];
+  const PUBLIC_PATHS = ['/api/iap/webhook', '/api/sentry/webhook', '/api/health', '/api/rls/verify', '/_next', '/favicon.ico', '/robots.txt'];
   if (PUBLIC_PATHS.some(p => path.startsWith(p))) return NextResponse.next();
 
   if (bypass) {
