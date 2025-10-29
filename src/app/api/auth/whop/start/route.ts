@@ -1,7 +1,10 @@
 export async function GET(request: Request) {
   const appId = process.env.NEXT_PUBLIC_WHOP_APP_ID;
-  const reqOrigin = new URL(request.url).origin;
-  const baseUrl = (process.env.NODE_ENV !== 'production') ? reqOrigin : (process.env.NEXT_PUBLIC_BASE_URL ?? reqOrigin);
+  const urlObj = new URL(request.url);
+  const reqOrigin = urlObj.origin;
+  const popup = urlObj.searchParams.get('popup');
+  // Prefer explicit BASE_URL when provided, otherwise use request origin to avoid misconfig
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? reqOrigin;
   const authorizeBaseRaw = process.env.NEXT_PUBLIC_WHOP_OAUTH_AUTHORIZE_URL ?? 'https://whop.com/oauth/authorize';
   const authorizeBase = authorizeBaseRaw.replace(/\/+$/, '');
   const scope = process.env.NEXT_PUBLIC_WHOP_OAUTH_SCOPE ?? 'read_user read:memberships';
@@ -12,7 +15,9 @@ export async function GET(request: Request) {
 
   const authorize = new URL(authorizeBase);
   authorize.searchParams.set('client_id', appId);
-  authorize.searchParams.set('redirect_uri', `${baseUrl}/api/auth/whop/callback`);
+  const cb = new URL(`${baseUrl}/api/auth/whop/callback`);
+  if (popup) cb.searchParams.set('popup', popup);
+  authorize.searchParams.set('redirect_uri', cb.toString());
   authorize.searchParams.set('response_type', 'code');
   authorize.searchParams.set('scope', scope);
   authorize.searchParams.set('state', Math.random().toString(36).slice(2));

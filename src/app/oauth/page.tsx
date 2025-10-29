@@ -4,7 +4,9 @@ export default function OAuthPage() {
       <h2>Whop OAuth</h2>
       <p>Click to start OAuth flow in a new tab/window.</p>
       <a
-        href="/api/auth/whop/start"
+        href="/api/auth/whop/start?popup=1"
+        target="_blank"
+        rel="noreferrer"
         style={{
           display: 'inline-block',
           marginTop: 12,

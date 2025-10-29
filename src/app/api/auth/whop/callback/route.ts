@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
+  const popup = searchParams.get('popup');
   const reqOrigin = new URL(request.url).origin;
   const redirectUri = `${reqOrigin}/api/auth/whop/callback`;
 
@@ -16,7 +17,15 @@ export async function GET(request: Request) {
     const isSecure = new URL(request.url).protocol === 'https:';
     // Decide where to send the user after login. Default to /experience
     let redirectPath: string = '/experience';
-    const res = NextResponse.redirect(new URL(redirectPath, request.url));
+    // If popup mode, return a small HTML page that reloads/redirects the opener
+    const res = popup ? new NextResponse(
+      `<!doctype html><html><body><script>
+        try { if (window.opener) { window.opener.location = '${redirectPath}'; } } catch(e){}
+        window.close();
+        setTimeout(function(){ location.href = '${redirectPath}'; }, 300);
+      </script><p>Authentication complete. You can close this window.</p></body></html>`,
+      { headers: { 'content-type': 'text/html' } }
+    ) : NextResponse.redirect(new URL(redirectPath, request.url));
     res.cookies.set('whop_access_token', token.access_token, {
       httpOnly: true,
       // Required for cookies inside Whop iframe (cross-site):
@@ -61,9 +70,11 @@ export async function GET(request: Request) {
             await supabase.from('members').update({ display_name: display, avatar_url: avatar }).eq('id', mem.id);
           }
         }
-        if (firstAccountUuid) {
+        if (!popup && firstAccountUuid) {
           redirectPath = `/experience/${firstAccountUuid}`;
           res.headers.set('Location', new URL(redirectPath, request.url).toString());
+        } else if (popup && firstAccountUuid) {
+          redirectPath = `/experience/${firstAccountUuid}`;
         }
       }
     } catch {}
