@@ -1,7 +1,7 @@
-import Home from '../page';
+import { redirect } from 'next/navigation';
 
 export default async function CatchAll() {
-  return <Home />;
+  redirect('/experience');
 }
 
 
