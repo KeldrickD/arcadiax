@@ -14,11 +14,14 @@ export async function GET(request: Request) {
   try {
     const token = await exchangeWhopCodeForToken({ code, redirectUri });
     const isSecure = new URL(request.url).protocol === 'https:';
-    const res = NextResponse.redirect(new URL('/', request.url));
+    // Decide where to send the user after login. Default to /experience
+    let redirectPath: string = '/experience';
+    const res = NextResponse.redirect(new URL(redirectPath, request.url));
     res.cookies.set('whop_access_token', token.access_token, {
       httpOnly: true,
-      sameSite: 'lax',
-      secure: isSecure,
+      // Required for cookies inside Whop iframe (cross-site):
+      sameSite: 'none',
+      secure: true,
       path: '/',
       maxAge: token.expires_in ?? 60 * 60,
     });
@@ -33,6 +36,7 @@ export async function GET(request: Request) {
         const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
         const display = me?.name ?? me?.username ?? null;
         const avatar = me?.avatar_url ?? me?.image_url ?? null;
+        let firstAccountUuid: string | undefined;
         for (const m of memberships ?? []) {
           const whopCompanyId = m?.company_id ?? m?.company?.id;
           if (!whopCompanyId) continue;
@@ -43,6 +47,7 @@ export async function GET(request: Request) {
             .maybeSingle();
           const accountUuid = acc?.id as string | undefined;
           if (!accountUuid) continue;
+          if (!firstAccountUuid) firstAccountUuid = accountUuid;
           const userId = me?.id ?? me?.user_id ?? 'whop';
           const { data: mem } = await supabase
             .from('members')
@@ -55,6 +60,10 @@ export async function GET(request: Request) {
           } else {
             await supabase.from('members').update({ display_name: display, avatar_url: avatar }).eq('id', mem.id);
           }
+        }
+        if (firstAccountUuid) {
+          redirectPath = `/experience/${firstAccountUuid}`;
+          res.headers.set('Location', new URL(redirectPath, request.url).toString());
         }
       }
     } catch {}
