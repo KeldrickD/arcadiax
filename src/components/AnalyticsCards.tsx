@@ -13,9 +13,9 @@ export function AnalyticsCards({ accountId }: { accountId: string }) {
   })(); }, [accountId]);
 
   const Card = ({ title, value, suffix='' }: any) => (
-    <div style={{ padding: 12, border: '1px solid #333', borderRadius: 12, background: '#0A0A0F' }}>
-      <div style={{ fontSize: 12, opacity: 0.8 }}>{title}</div>
-      <div style={{ fontSize: 22, fontWeight: 700 }}>{loading ? '…' : `${value}${suffix}`}</div>
+    <div className="card ax-fade-up" style={{ padding: 16 }}>
+      <div style={{ fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.65 }}>{title}</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: '#22d3ee' }}>{loading ? '…' : `${value}${suffix}`}</div>
     </div>
   );
 

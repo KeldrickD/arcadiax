@@ -21,7 +21,8 @@ export function CreateGameForm({ accountId }: { accountId: string }) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ accountId, type, name }),
       });
-      const j = await r.json().catch(() => ({}));
+      const raw = await r.text();
+      let j: any = {}; try { j = JSON.parse(raw); } catch { j = { error: raw }; }
       if (!r.ok || !j.ok) throw new Error(j.error || 'Failed to create');
       setMsg('Game created');
       router.refresh();
@@ -33,7 +34,7 @@ export function CreateGameForm({ accountId }: { accountId: string }) {
   };
 
   return (
-    <form onSubmit={onSubmit} style={{ display: 'grid', gap: 8 }}>
+    <form onSubmit={onSubmit} className="card" style={{ display: 'grid', gap: 8, padding: 12 }}>
       <label>
         <span style={{ display: 'block', fontSize: 12 }}>Name</span>
         <input value={name} onChange={e => setName(e.target.value)} style={{ padding: 8, border: '1px solid #333', borderRadius: 8 }} />

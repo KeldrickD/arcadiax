@@ -66,29 +66,34 @@ export default async function DashboardPage({ params }: { params: Promise<{ comp
         <p style={{ color: '#00E0FF' }}>Dev bypass active — membership check skipped.</p>
       )}
       <AnalyticsCards accountId={companyId} />
-      <ExportsPanel accountId={companyId} />
+      <div className="ax-section">
+        <div className="card" style={{ padding: 12 }}>
+          <h3 style={{ marginTop: 0 }}>Exports</h3>
+          <ExportsPanel accountId={companyId} />
+        </div>
+      </div>
       <div style={{ display: 'grid', gap: 16 }}>
         {json.items?.length === 0 && (
-          <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8, background: 'rgba(124,58,237,0.08)' }}>
+          <div className="card" style={{ padding: 12, background: 'rgba(124,58,237,0.08)' }}>
             <h3 style={{ marginTop: 0 }}>Create your first game</h3>
             <p style={{ opacity: 0.85 }}>Start by creating a game. Then you can schedule your first session.</p>
             <CreateGameForm accountId={companyId} />
           </div>
         )}
         {canManage && (
-          <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
+          <div id="create-game" className="card" style={{ padding: 12 }}>
             <h3>Create Game</h3>
             <CreateGameForm accountId={companyId} />
           </div>
         )}
         {canManage && (
-          <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
+          <div className="card" style={{ padding: 12 }}>
             <h3>Schedule Session</h3>
             <ScheduleSessionForm games={(json.items ?? []) as any} />
           </div>
         )}
         {((json.items ?? []) as any[])[0] && (
-          <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
+          <div className="card" style={{ padding: 12 }}>
             <h3>Start Trivia Round (on latest session)</h3>
             {/* For demo, pick the most recent session of first game */}
             {/* In a real UI, allow picking session explicitly */}
@@ -100,13 +105,13 @@ export default async function DashboardPage({ params }: { params: Promise<{ comp
           </div>
         )}
         {canManage && (
-          <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
+          <div className="card" style={{ padding: 12 }}>
             <h3>Queue Round</h3>
             <RoundQueueStarter companyId={companyId} />
           </div>
         )}
         {canManage && (
-          <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8 }}>
+          <div className="card" style={{ padding: 12 }}>
             <h3>Community Settings</h3>
             <CreatorSettingsForm accountId={companyId} />
           </div>

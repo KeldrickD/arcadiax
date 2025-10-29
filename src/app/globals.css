@@ -64,6 +64,25 @@ html, body {
 	box-shadow: inset 0 0 0 1px rgba(124,58,237,0.25);
 }
 
+/* Neon glass card */
+.card {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  transition: all 0.25s ease;
+}
+.card:hover {
+  border-color: rgba(90,90,255,0.4);
+  box-shadow: 0 0 18px rgba(90,90,255,0.25);
+}
+
+.ax-section + .ax-section {
+  margin-top: 2.5rem;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 2rem;
+}
+
 /* Pulsing neon live dot */
 .ax-live-dot {
 	position: relative;
