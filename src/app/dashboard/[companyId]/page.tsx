@@ -55,28 +55,8 @@ export default async function DashboardPage({ params }: { params: Promise<{ comp
     const res = await fetch(`${base}/api/games?accountId=${companyId}`, { cache: 'no-store' });
     json = await res.json().catch(() => ({ items: [] }));
   } catch {}
-  // Determine role for server-side gating
-  let canManage = false;
-  try {
-    if (access) {
-      let membershipCompanyId = companyId;
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
-      if (url && serviceKey) {
-        const { createClient } = await import('@supabase/supabase-js');
-        const supabase = createClient(url, serviceKey, { auth: { persistSession: false } });
-        const { data } = await supabase
-          .from('accounts')
-          .select('whop_company_id')
-          .eq('id', companyId)
-          .maybeSingle();
-        if (data?.whop_company_id) membershipCompanyId = data.whop_company_id as string;
-      }
-      const { getWhopRole } = await import('@/lib/whop');
-      const role = await getWhopRole(access, membershipCompanyId);
-      canManage = role === 'owner' || role === 'mod';
-    }
-  } catch {}
+  // Creators install the app; expose actions by default
+  const canManage = true;
 
   return (
     <div style={{ padding: 24 }}>
@@ -92,7 +72,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ comp
           <div style={{ padding: 12, border: '1px solid #333', borderRadius: 8, background: 'rgba(124,58,237,0.08)' }}>
             <h3 style={{ marginTop: 0 }}>Create your first game</h3>
             <p style={{ opacity: 0.85 }}>Start by creating a game. Then you can schedule your first session.</p>
-            {canManage ? <CreateGameForm accountId={companyId} /> : <p>Ask an owner or moderator to create the first game.</p>}
+            <CreateGameForm accountId={companyId} />
           </div>
         )}
         {canManage && (
@@ -116,7 +96,7 @@ export default async function DashboardPage({ params }: { params: Promise<{ comp
             {/* Fallback to client flow if not available */}
             {/* Small inline fetch */}
             {/* eslint-disable-next-line react/no-unescaped-entities */}
-            {canManage ? <RoundStarter companyId={companyId} /> : <div style={{ opacity: 0.8 }}>Only owners/mods can start rounds.</div>}
+            <RoundStarter companyId={companyId} />
           </div>
         )}
         {canManage && (

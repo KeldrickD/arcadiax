@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 export default function SessionsAdmin({ params }: { params: { companyId: string } }) {
   const { companyId } = params;
-  const [canManage, setCanManage] = useState<boolean>(false);
+  const [canManage] = useState<boolean>(true);
   const [sessionId, setSessionId] = useState<string>('');
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -12,11 +12,6 @@ export default function SessionsAdmin({ params }: { params: { companyId: string 
   const [table, setTable] = useState<any[]>([]);
 
   useEffect(() => { (async () => {
-    try {
-      const rRole = await fetch(`/api/auth/role?companyId=${companyId}`, { cache: 'no-store' });
-      const jRole = await rRole.json().catch(()=>({canManage:false}));
-      setCanManage(!!jRole.canManage);
-    } catch {}
     const r = await fetch(`/api/sessions?accountId=${companyId}`); const j = await r.json();
     setSessionId(j.items?.[0]?.id ?? '');
   })(); }, [companyId]);
