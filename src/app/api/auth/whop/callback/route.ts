@@ -52,12 +52,20 @@ export async function GET(request: Request) {
         for (const m of memberships ?? []) {
           const whopCompanyId = m?.company_id ?? m?.company?.id;
           if (!whopCompanyId) continue;
-          const { data: acc } = await supabase
+          let { data: acc } = await supabase
             .from('accounts')
             .select('id')
             .eq('whop_company_id', whopCompanyId)
             .maybeSingle();
-          const accountUuid = acc?.id as string | undefined;
+          let accountUuid = acc?.id as string | undefined;
+          if (!accountUuid) {
+            const { data: created } = await supabase
+              .from('accounts')
+              .insert({ whop_company_id: whopCompanyId })
+              .select('id')
+              .maybeSingle();
+            accountUuid = created?.id as string | undefined;
+          }
           if (!accountUuid) continue;
           if (!firstAccountUuid) firstAccountUuid = accountUuid;
           const userId = me?.id ?? me?.user_id ?? 'whop';

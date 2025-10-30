@@ -27,6 +27,16 @@ export async function POST(request: Request) {
       accountUuid = (byWhop?.id as string) ?? null;
     }
   } catch {}
+  if (!accountUuid) {
+    try {
+      const { data: created } = await supabase
+        .from('accounts')
+        .insert({ whop_company_id: accountId })
+        .select('id')
+        .maybeSingle();
+      accountUuid = (created?.id as string) ?? null;
+    } catch {}
+  }
   if (!accountUuid) return new Response('Unknown accountId', { status: 400 });
 
   const { data, error } = await supabase
